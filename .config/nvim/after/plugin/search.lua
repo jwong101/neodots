@@ -1,7 +1,7 @@
 local keymap = vim.keymap.set
 
 local function mapsearch(op)
-  keymap('', op, string.format([[<plug>(asterisk-%s)<cmd>lua require('hlslens').start()<cr>]], o), {remap = true})
+  keymap('', op, string.format([[<plug>(asterisk-%s)<cmd>lua require('hlslens').start()<cr>]], op), {remap = true})
 end
 
 local function start_hlslens(dir)

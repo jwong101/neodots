@@ -51,6 +51,7 @@ return packer.startup {
     use 'tpope/vim-apathy'
     use 'tpope/vim-sleuth'
     use 'tpope/vim-projectionist'
+    use 'tpope/vim-obsession'
 
     use { 'editorconfig/editorconfig-vim', opt = true }
 
@@ -99,7 +100,13 @@ return packer.startup {
     use { 'saadparwaiz1/cmp_luasnip' }
     use { 'rafamadriz/friendly-snippets' }
 
-    use { 'kevinhwang91/nvim-bqf', ft = 'qf' }
+    use { 'kevinhwang91/nvim-bqf', opt = true }
+
+    use {
+      'folke/trouble.nvim',
+      requires = 'kyazdani42/nvim-web-devicons',
+    }
+
     use 'gennaro-tedesco/nvim-jqx'
 
     use {
