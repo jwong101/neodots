@@ -1,0 +1,17 @@
+# backup
+*.swp
+
+# tools
+tags
+.mypy_cache/
+
+# vim
+.projection.json
+Session.vim
+
+# output
+*.so
+*.o
+*.bin
+*.pyc
+__pycache__

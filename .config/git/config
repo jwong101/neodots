@@ -1,0 +1,46 @@
+[rebase]
+	autosquash = true
+[pull]
+	rebase = true
+[user]
+	name = Joshua Wong
+	email = joshuawong@anticentri.st
+	signingkey = joshuawong@anticentri.st
+[core]
+	editor = nvim
+[log]
+	decorate = true
+[commit]
+	verbose = true
+	gpgsign = true
+[init]
+	defaultBranch = main
+[color]
+	ui = auto
+[alias]
+	c = commit
+	ls = ls-files
+	ca = commit --amend
+	d = diff
+	dpo = diff -p ORIG_HEAD..
+	a = add
+	ap = add -p
+	l = log
+	lp = log -p
+	lg = log --oneline --graph
+	lpo = log -p ORIG_HEAD..
+	f = fetch
+	p = push
+	pl = pull
+	m = merge
+	sw = switch
+	r = rebase
+	re = restore
+	rs = reset
+	d = diff
+	ds = diff --staged
+[credential "https://github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[sendemail]
+	smtpserver = /usr/bin/msmtp

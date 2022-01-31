@@ -1,0 +1,8 @@
+
+_awsp() {
+  export AWS_PROFILE=$(grep profile ${XDG_CONFIG_HOME}/aws/config \
+    | awk '{print $2}' | sed 's,],,g' \
+    | fzf --layout reverse --height=10% --border)
+}
+
+_awscp
