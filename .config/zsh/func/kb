@@ -1,133 +1,132 @@
 #!/usr/bin/env zsh
-# shit version of https://github.com/ahmetb/kubectl-aliases except I don't want 1 billion aliases
 
 _die() {
-  printf "error: %s\n" "$1" >&2
-  exit 1
+	printf "error: %s\n" "$1" >&2
+	exit 1
 }
 
 _value() {
-  local _vl="${1:0:1}"
-  if [[ -z "${_vl}" ]]; then
-    printf ""
-    return 0
-  fi
-  case "${_vl}" in
-    n)
-      printf "--namespace "
-      ;;
-    f)
-      printf "--filename "
-      ;;
-    l)
-      printf "--selector "
-      ;;
-    p)
-      printf "-o jsonpath "
-      ;;
-    *)
-      printf ""
-      ;;
-  esac
+	local _vl="${1:0:1}"
+	if [[ -z ${_vl} ]]; then
+		printf ""
+		return 0
+	fi
+	case "${_vl}" in
+	n)
+		printf "--namespace "
+		;;
+	f)
+		printf "--filename "
+		;;
+	l)
+		printf "--selector "
+		;;
+	p)
+		printf "-o jsonpath "
+		;;
+	*)
+		printf ""
+		;;
+	esac
 }
 
 _flags() {
-  local _fl="${1:0:2}"
-  if [[ -z "${_fl}" ]]; then
-    printf ""
-    return 0
-  fi
-  case "${_fl}" in
-    oy)
-      printf "-o yaml $(_value ${1:2})"
-      ;;
-    oj)
-      printf "-o json $(_value ${1:2})"
-      ;;
-    ow)
-      printf "-o wide $(_value ${1:2})"
-      ;;
-    *)
-      printf "$(_value ${1})"
-      ;;
-  esac
+	local _fl="${1:0:2}"
+	if [[ -z ${_fl} ]]; then
+		printf ""
+		return 0
+	fi
+	case "${_fl}" in
+	oy)
+		printf "-o yaml $(_value ${1:2})"
+		;;
+	oj)
+		printf "-o json $(_value ${1:2})"
+		;;
+	ow)
+		printf "-o wide $(_value ${1:2})"
+		;;
+	*)
+		printf "$(_value ${1})"
+		;;
+	esac
 }
 
 _resource() {
-  local _res="${1:0:2}"
-  if [[ -z "${_res}" ]]; then
-    printf ""
-    return 0
-  fi
-  case "${_res}" in
-    po)
-      printf "pod $(_flags ${1:2})"
-      ;;
-    de)
-      printf "deployment $(_flags ${1:2})"
-      ;;
-    'in')
-      printf "deployment $(_flags ${1:2})"
-      ;;
-    sv)
-      printf "service $(_flags ${1:2})"
-      ;;
-    cm)
-      printf "configmap $(_flags ${1:2})"
-      ;;
-    sc)
-      printf "secret $(_flags ${1:2})"
-      ;;
-    ns)
-      printf "namespace $(_flags ${1:2})"
-      ;;
-    no)
-      printf "node $(_flags ${1:2})"
-      ;;
-    *)
-      printf "$(_flags ${1})"
-      ;;
-  esac
+	local _res="${1:0:2}"
+	if [[ -z ${_res} ]]; then
+		printf ""
+		return 0
+	fi
+	case "${_res}" in
+	po)
+		printf "pod $(_flags ${1:2})"
+		;;
+	de)
+		printf "deployment $(_flags ${1:2})"
+		;;
+	'in')
+		printf "deployment $(_flags ${1:2})"
+		;;
+	sv)
+		printf "service $(_flags ${1:2})"
+		;;
+	cm)
+		printf "configmap $(_flags ${1:2})"
+		;;
+	sc)
+		printf "secret $(_flags ${1:2})"
+		;;
+	ns)
+		printf "namespace $(_flags ${1:2})"
+		;;
+	no)
+		printf "node $(_flags ${1:2})"
+		;;
+	*)
+		printf "$(_flags ${1})"
+		;;
+	esac
 
 }
 
 _cmd() {
-  local _command="${1:0:1}"
-  if [[ -z "${_command}" ]]; then
-    printf ""
-    return 0
-  fi
-  case "${_command}" in
-    g)
-      printf "get $(_resource ${1:1})"
-      ;;
-    a)
-      local _mod="${1:1:1}"
-      printf "apply -%s %s" ${_mod} $(_resource ${1:2})
-      ;;
-    d)
-      printf "describe %s" $(_resource ${1:1})
-      ;;
-    l)
-      printf "log -f %s" $(_resource ${1:1})
-      ;;
-    e)
-      printf "exec -it %s" $(_resource ${1:1})
-      ;;
-    k)
-      printf "kustomize %s" $(_resource ${1:1})
-      ;;
-    *)
-      printf ""
-      ;;
-  esac
+	local _command="${1:0:1}"
+	if [[ -z ${_command} ]]; then
+		printf ""
+		return 0
+	fi
+	case "${_command}" in
+	g)
+		printf "get $(_resource ${1:1})"
+		;;
+	a)
+		local _mod="${1:1:1}"
+		printf "apply -%s %s" ${_mod} $(_resource ${1:2})
+		;;
+	d)
+		printf "describe %s" $(_resource ${1:1})
+		;;
+	l)
+		printf "log -f %s" $(_resource ${1:1})
+		;;
+	e)
+		printf "exec -it %s" $(_resource ${1:1})
+		;;
+	k)
+		printf "kustomize %s" $(_resource ${1:1})
+		;;
+	*)
+		printf ""
+		;;
+	esac
 }
 
 _kb() {
-  local _cons="$1"
-  local _kubecmd="kubectl $(_cmd $_cons)"
-  shift
-  eval "${_kubecmd} $@"
+	local _cons="$1"
+	local _kubecmd="kubectl $(_cmd $_cons)"
+	shift
+	eval "${_kubecmd} $@"
 }
 
 _kb "$@"

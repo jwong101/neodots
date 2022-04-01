@@ -4,14 +4,18 @@
 # tools
 tags
 .mypy_cache/
-
-# vim
-.projection.json
-Session.vim
+.env
+.projectionist.json
+.eslintcache
 
 # output
 *.so
 *.o
 *.bin
+*.zwc
 *.pyc
+*.egg-info
 __pycache__
+.dmypy.json
+.d8_history
+

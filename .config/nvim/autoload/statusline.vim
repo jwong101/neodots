@@ -1,6 +1,6 @@
 function! statusline#git() abort
-if exists('b:gitsigns_head')
-  return b:gitsigns_head
+if exists('b:gitsigns_status')
+  return b:gitsigns_status
 end
 
 if exists('*FugitiveHead')

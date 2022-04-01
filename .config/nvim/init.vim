@@ -28,6 +28,7 @@ set relativenumber
 set expandtab
 set shiftwidth=4
 set softtabstop=4
+set foldlevel=99
 set breakindent
 set linebreak
 
@@ -40,7 +41,7 @@ set wildmode=longest:full,full
 set inccommand=split
 set signcolumn=yes
 
-set colorcolumn=+1
+" set colorcolumn=+1
 set cursorline
 
 set ignorecase
@@ -50,6 +51,7 @@ set splitright
 set splitbelow
 set lazyredraw
 set scrolloff=10
+set sidescrolloff=2
 set mouse=a
 set updatetime=250
 set timeoutlen=500
@@ -75,8 +77,8 @@ nnoremap gq<CR> mzHmygggqG`yzt`z
 nnoremap <silent> <Leader>sws <Cmd>%s/\s\+$<CR>
 
 nnoremap <Leader>tj :Tjump /
-nnoremap <Leader>ef :e %:p:h<Tab>
-nnoremap <C-W><Space>ef :sp %:p:h<Tab>
+nnoremap <Leader>ef :find<Space>
+nnoremap <C-W><Space>ef :sp %:p:h<Space>
 nnoremap <Leader>b :ls<CR>:b<Space>
 nnoremap <C-W><Space>b :ls<CR>:sb<Space>
 
@@ -129,6 +131,7 @@ cnoremap <expr> <C-P> wildmenumode() ? '<C-P>' : '<Up>'
 cnoremap <expr> <C-N> wildmenumode() ? '<C-N>' : '<Down>'
 cnoremap <expr> <C-J> pumvisible() ? '<Down><Tab>' : '<C-J>'
 cnoremap <expr> <C-K> pumvisible() ? '<Up><Tab>' : '<C-K>'
+tnoremap <Esc> <C-\><C-n>
 
 function! Sort(type, ...) abort
     '[,']sort
@@ -136,8 +139,6 @@ function! Sort(type, ...) abort
 endfunction
 nnoremap gs m'<Cmd>set operatorfunc=Sort<CR>g@
 xnoremap gs :sort<CR>
-
-command! PackerSync lua require('jw.plugins').sync()
 
 augroup init
     autocmd!

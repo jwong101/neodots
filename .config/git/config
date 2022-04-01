@@ -10,9 +10,12 @@
 	editor = nvim
 [log]
 	decorate = true
+[push]
+	default = current
+[fetch]
+	prune = true
 [commit]
 	verbose = true
-	gpgsign = true
 [init]
 	defaultBranch = main
 [color]
@@ -34,6 +37,7 @@
 	pl = pull
 	m = merge
 	sw = switch
+	s = status
 	r = rebase
 	re = restore
 	rs = reset

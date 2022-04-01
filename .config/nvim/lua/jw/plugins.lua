@@ -7,12 +7,13 @@ end
 --]]
 
 vim.cmd [[packadd packer.nvim]]
+package.loaded["packer"] = nil
 local packer = require('packer')
 
 return packer.startup {
   function(use)
     use 'lewis6991/impatient.nvim'
-    use {'wbthomason/packer.nvim', opt = true}
+    use { 'wbthomason/packer.nvim', opt = true }
 
     use {
       'tpope/vim-dispatch',
@@ -35,29 +36,77 @@ return packer.startup {
     use 'nvim-lua/plenary.nvim'
     use 'tpope/vim-repeat'
 
-    local use_sandwich = false
-    use { 'tpope/vim-surround', opt = use_sandwich }
-    use { 'machakann/vim-sandwich', opt = not use_sandwich }
+    use { 'tpope/vim-surround' }
 
     use 'ggandor/lightspeed.nvim'
-    use 'AndrewRadev/splitjoin.vim'
+
+    use {
+      'AndrewRadev/splitjoin.vim',
+      keys = { 'gJ', 'gS' },
+    }
 
     use 'mfussenegger/nvim-lint'
     use 'tpope/vim-fugitive'
     use { 'tpope/vim-rhubarb', cmd = 'GBrowse' }
-    use 'tpope/vim-commentary'
+    use { 'tpope/vim-commentary', opt = true }
     use 'tpope/vim-abolish'
     use 'tpope/vim-characterize'
     use 'tpope/vim-apathy'
     use 'tpope/vim-sleuth'
     use 'tpope/vim-projectionist'
     use 'tpope/vim-obsession'
+    use 'tpope/vim-rsi'
+    use {
+      'tpope/vim-eunuch',
+      cmd = {
+        'Delete',
+        'Unlink',
+        'Move',
+        'Rename',
+        'Chmod',
+        'Mkdir',
+        'Cfind',
+        'Clocate',
+        'Lfind',
+        'Llocate',
+        'Wall',
+        'SudoWrite',
+        'SudoEdit',
+      },
+    }
+    use 'tpope/vim-dadbod'
+    use 'kristijanhusak/vim-dadbod-ui'
+    use 'kristijanhusak/vim-dadbod-completion'
+
+    use 'justinmk/vim-dirvish'
+    use { 'kristijanhusak/vim-dirvish-git', ft = 'dirvish' }
+    use { 'fsharpasharp/vim-dirvinist' }
+
+    use {
+      'monaqa/dial.nvim',
+      config = function()
+        local nvmap = function (key, def)
+          return vim.keymap.set({'n', 'v'}, key, def, { remap = true, })
+        end
+        local vmap = require('jw.utils').vmap
+        nvmap("<C-a>", "<Plug>(dial-increment)")
+        nvmap("<C-x>", "<Plug>(dial-decrement)")
+        local dmap = require('dial.map')
+        vmap("g<C-a>", dmap.inc_gvisual())
+        vmap("g<C-X>", dmap.dec_gvisual())
+      end,
+    }
+
+    use {
+      'numToStr/Comment.nvim',
+    }
 
     use { 'editorconfig/editorconfig-vim', opt = true }
 
     use {
       'gpanders/nvim-parinfer',
-      config = [[vim.g.parinfer_no_maps = 1]]
+      opt = true,
+      config = [[vim.g.parinfer_no_maps = 1]],
     }
 
     use 'fladson/vim-kitty'
@@ -65,7 +114,7 @@ return packer.startup {
     use 'romainl/vim-qlist'
     use { 'romainl/vim-qf', config = [[vim.g.qf_mapping_ack_style = 1]] }
     use { 'andymass/vim-matchup', config = [[vim.g.matchparen_offscreen = {}]] }
-    use { 'wellle/targets.vim', opt = true }
+    use { 'wellle/targets.vim' }
 
     use 'haya14busa/vim-asterisk'
     use 'kevinhwang91/nvim-hlslens'
@@ -74,24 +123,26 @@ return packer.startup {
 
     use { 'sindrets/diffview.nvim', requires = 'nvim-lua/plenary.nvim' }
 
-    use {
-      'folke/which-key.nvim',
-      opt = true,
-    }
-
-    use {
-      'TimUntersberger/neogit',
-      requires = { 'nvim-lua/plenary.nvim', 'sindrets/diffview.nvim' },
-      opt = true, -- maybe once this has more features
-    }
-
     use 'milisims/nvim-luaref'
     use 'nanotee/luv-vimdocs'
 
     use { 'neovim/nvim-lspconfig' }
     use { 'onsails/lspkind-nvim' }
+    use { 'b0o/schemastore.nvim' }
+    use 'ray-x/lsp_signature.nvim'
+    use 'folke/lsp-colors.nvim'
+    use {
+      'jose-elias-alvarez/nvim-lsp-ts-utils',
+      requires = 'plenary.nvim',
+    }
+    use {
+      'j-hui/fidget.nvim',
+      after = 'kanagawa.nvim',
+      config = [[require"fidget".setup()]],
+    }
 
     use { 'hrsh7th/cmp-nvim-lsp' }
+    use 'hrsh7th/cmp-nvim-lua'
     use { 'hrsh7th/cmp-buffer' }
     use { 'hrsh7th/cmp-path' }
     use { 'hrsh7th/nvim-cmp' }
@@ -99,12 +150,24 @@ return packer.startup {
     use { 'L3MON4D3/LuaSnip' }
     use { 'saadparwaiz1/cmp_luasnip' }
     use { 'rafamadriz/friendly-snippets' }
+    use { 'windwp/nvim-autopairs' }
 
-    use { 'kevinhwang91/nvim-bqf', opt = true }
+    use {
+      'neovimhaskell/haskell-vim',
+      ft = 'haskell',
+    }
+
+    use {
+      'elzr/vim-json',
+      ft = 'json',
+    }
 
     use {
       'folke/trouble.nvim',
       requires = 'kyazdani42/nvim-web-devicons',
+    }
+    use {
+      'rcarriga/nvim-notify',
     }
 
     use 'gennaro-tedesco/nvim-jqx'
@@ -116,6 +179,14 @@ return packer.startup {
         vim.g.tokyonight_sidebars = { 'qf', 'vista_kind', 'terminal', 'packer' }
         vim.cmd 'colorscheme tokyonight'
       end,
+      opt = true,
+    }
+
+    use {
+      'rebelot/kanagawa.nvim',
+      config = function()
+        vim.cmd "colorscheme kanagawa"
+      end,
       event = 'UIEnter',
     }
 
@@ -124,38 +195,18 @@ return packer.startup {
       config = {
         default = true,
       },
-      after = 'tokyonight.nvim',
+      after = 'kanagawa.nvim',
+    }
+
+    use {
+      'yamatsum/nvim-nonicons',
+      requires = {'kyazdani42/nvim-web-devicons'},
+      after = 'nvim-web-devicons',
     }
 
     use {
       'lewis6991/gitsigns.nvim',
       requires = 'nvim-lua/plenary.nvim',
-      config = function()
-        require('gitsigns').setup {
-          signs = {
-            add = {
-              hl = 'GitGutterAdd',
-              text = '+',
-            },
-            change = {
-              hl = 'GitGutterChange',
-              text = '~',
-            },
-            delete = {
-              hl = 'GitGutterDelete',
-              text = '_',
-            },
-            topdelete = {
-              hl = 'GitGutterDelete',
-              text = '‾',
-            },
-            changedelete = {
-              hl = 'GitGutterChange',
-              text = '~',
-            },
-          },
-        }
-      end,
     }
 
     local use_telescope = false
@@ -184,8 +235,6 @@ return packer.startup {
       opt = use_telescope,
     }
 
-
-
     use {'nvim-treesitter/nvim-treesitter', run = ':TSUpdate'}
     use {
       'nvim-treesitter/playground',
@@ -195,6 +244,12 @@ return packer.startup {
     use {'nvim-treesitter/nvim-treesitter-textobjects', requires = 'nvim-treesitter/nvim-treesitter'}
     use {'RRethy/nvim-treesitter-textsubjects', requires = 'nvim-treesitter/nvim-treesitter'}
     use {'JoosepAlviste/nvim-ts-context-commentstring', requires = 'nvim-treesitter/nvim-treesitter'}
+    use { 'windwp/nvim-ts-autotag', requires = 'nvim-treesitter/nvim-treesitter' }
+    use {
+      'danymat/neogen',
+      requires = 'nvim-treesitter/nvim-treesitter',
+    }
+    use 'mizlan/iswap.nvim'
 
     use {'dstein64/vim-startuptime', cmd = 'StartupTime',}
 
@@ -202,7 +257,7 @@ return packer.startup {
 
     use {
       'lukas-reineke/indent-blankline.nvim',
-      after = 'tokyonight.nvim',
+      after = 'kanagawa.nvim',
       config = function()
         local blankline = require('indent_blankline')
         blankline.setup {
@@ -212,6 +267,7 @@ return packer.startup {
             'packer',
             'man',
             'lspinfo',
+            'Trouble',
             'diagnosticpopup',
           },
           buftype_exclude = { 'terminal', 'nofile', },
@@ -224,9 +280,7 @@ return packer.startup {
         }
       end,
     }
-
     use { 'ziglang/zig.vim', ft = 'zig' }
-
   end,
   config = {
     profile = {

@@ -8,75 +8,48 @@ if not loaded then
   return
 end
 
-local nsetk = function(...)
-  vim.keymap.set('n', ...)
-end
+local u = require 'jw.utils'
 
 
-nsetk('<leader>en', function()
-  fzf.files({cwd = '~/.config/nvim'})
-end)
 
-nsetk('<leader>ez', function()
-  fzf.files({cwd = '~/.config/zsh'})
-end)
+u.nmap('<leader>en', u.partial(fzf.files, {cwd = '~/.config/nvim'}))
 
-nsetk('<leader>fd', function()
-  fzf.files()
-end)
+u.nmap('<leader>ez', u.partial(fzf.files, {cwd = '~/.config/zsh'}))
 
-nsetk('<leader>fg', function()
-  fzf.git_files()
-end)
+u.nmap('<leader>fd', fzf.files)
 
-nsetk('<leader>sm', function()
-  fzf.marks()
-end)
+u.nmap('<leader>fg', fzf.git_files)
 
-nsetk('<leader>sr', function()
-  fzf.registers()
-end)
+u.nmap('<leader>sm', fzf.marks)
 
-nsetk('<leader>sj', function()
-  fzf.jumps()
-end)
+u.nmap('<leader>sr', fzf.registers)
 
-nsetk('<leader>th', function()
-  fzf.help_tags()
-end)
+u.nmap('<leader>sj', fzf.jumps)
 
-nsetk('<leader>tt', function()
-  fzf.tags()
-end)
+u.nmap('<leader>th', fzf.help_tags)
 
-nsetk('<leader>tb', function()
-  fzf.btags()
-end)
+u.nmap('<leader>tt', fzf.tags)
 
-nsetk('<leader>sb', function()
-  fzf.buffers()
-end)
+u.nmap('<leader>tb', fzf.btags)
 
-nsetk('<leader>sa', function()
-  fzf.args()
-end)
+u.nmap('<leader>sb', fzf.buffers)
 
-nsetk('<leader>fl', function()
-  fzf.blines()
-end)
+u.nmap('<leader>sa', fzf.args)
 
-nsetk('<leader>qf', fzf.quickfix)
-nsetk('<leader>lf', fzf.loclist)
--- nsetk('<leader>cf', fzf.lsp_code_actions)
+u.nmap('<leader>fl', fzf.blines)
 
-nsetk('<leader>p', fzf.live_grep_native)
-nsetk('<leader>P', fzf.live_grep_resume)
-nsetk('gx', fzf.grep_cword)
-nsetk('gX', fzf.grep_cWORD)
+u.nmap('<leader>qf', fzf.quickfix)
+u.nmap('<leader>lf', fzf.loclist)
+-- u.nmap('<leader>cf', fzf.lsp_code_actions)
+
+u.nmap('<leader>p', fzf.live_grep_native)
+u.nmap('<leader>P', fzf.live_grep_resume)
+u.nmap('gx', fzf.grep_cword)
+u.nmap('gX', fzf.grep_cWORD)
 -- vim.keymap.set({'n', 'v'}, 'gx', fzf.grep_cword)
 
-nsetk('<leader>j', fzf.command_history)
-nsetk('<leader>k', fzf.commands)
-nsetk('<leader>o', fzf.search_history)
+u.nmap('<leader>j', fzf.command_history)
+u.nmap('<leader>k', fzf.commands)
+u.nmap('<leader>o', fzf.search_history)
 
 -- fzf.register_ui_select()

@@ -1,0 +1,9 @@
+_fzf_rbw() {
+	rbw list --fields name,folder,id | sort -n |
+		fzf --delimiter='\t' --layout=reverse --info=inline --border --margin=1 --padding=1 --height=80% \
+			--bind 'ctrl-o:execute:rbw edit {3}' \
+			--bind 'enter:execute:rbw get {3} | wl-copy --trim-newline' \
+			--preview 'rbw get --full {3}'
+}
+
+_fzf_rbw

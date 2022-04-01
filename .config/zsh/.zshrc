@@ -34,6 +34,7 @@ typeset -U cdpath CDPATH fpath FPATH manpath MANPATH
 source "${ZDOTDIR}/env.sh"
 source "${ZDOTDIR}/paths.zsh"
 source "${ZDOTDIR}/aliases.sh"
+eval "$(pyenv virtualenv-init -)"
 
 export HISTFILE="${XDG_STATE_HOME:-$HOME/.state}/zsh/history"
 export HISTSIZE=100000
@@ -45,11 +46,11 @@ export KEYTIMEOUT=5
 
 bindkey -v
 
-bindkey '^a' beginning-of-line
-bindkey '^e' end-of-line
-bindkey '^?' backward-delete-char
-bindkey '^[b' vi-backward-blank-word
-bindkey '^[w' vi-forward-blank-word
+bindkey -M viins '^a' beginning-of-line
+bindkey -M viins '^e' end-of-line
+bindkey -M viins '^?' backward-delete-char
+bindkey -M viins '^[b' vi-backward-blank-word
+bindkey -M viins '^[w' vi-forward-blank-word
 
 my-backward-delete-word() {
   local WORDCHARS=${WORDCHARS/\//}
@@ -132,6 +133,7 @@ fi
 autoload -Uz bashcompinit && bashcompinit
 source "${ZDOTDIR}/bashcomp/_pipx"
 source "${ZDOTDIR}/bashcomp/pnpm.zsh"
+source "${ZDOTDIR}/bashcomp/kubie"
 
 zstyle ':completion:*' completer _complete _approximate
 zstyle ':completion:*' use-cache on
@@ -211,3 +213,9 @@ if [[ -n "${PROFILE_ZSH}" ]]; then
   zprof
 fi
 
+if [[ -n "${INSIDE_EMACS}" ]]; then
+  bindkey -e
+fi
+
+# opam configuration
+[[ ! -r /home/joshua/.local/share/opam/opam-init/init.zsh ]] || source /home/joshua/.local/share/opam/opam-init/init.zsh  > /dev/null 2> /dev/null

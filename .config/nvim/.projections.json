@@ -1,0 +1,28 @@
+{
+    "after/ftplugin/*.vim": {
+        "type": "ftp",
+        "template": ["let b:undo_ftplugin = get(b:, 'undo_ftplugin', '')"]
+    },
+    "after/plugin/*.lua": {
+        "type": "plug"
+    },
+    "plugin/*.vim": {
+        "type": "plg"
+    },
+    "plugin/*.lua": {
+        "type": "plg"
+    },
+    "autoload/*.vim": {
+        "type:": "auto"
+    },
+    "compiler/*.vim": {
+        "type:": "comp"
+    },
+    "lua/**/*.lua": {
+        "type": "lua"
+    },
+    "init.vim": {
+        "type": "init"
+    },
+    "*": {"path" : ["./plugin", "./after/**", "./lua/**", "./compiler/**", "./autoload/"]}
+}

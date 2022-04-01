@@ -1,5 +1,5 @@
 require('nvim-treesitter.configs').setup {
-  ensure_installed = { 'go', 'gomod', 'make', 'cmake', 'rst', 'bash', 'comment', 'dockerfile', 'rust', 'toml', 'query', 'javascript', 'typescript', 'haskell', 'regex', 'vim', 'http', 'html', 'css', 'llvm', 'graphql', 'json', 'fennel', 'lua', 'python', 'c', 'cpp', 'yaml'},
+  ensure_installed = { 'go', 'gomod', 'make', 'cmake', 'commonlisp', 'java', 'rst', 'bash', 'comment', 'dockerfile', 'rust', 'toml', 'markdown', 'gowork', 'glsl', 'ninja', 'svelte', 'hcl', 'latex', 'bibtex', 'scss', 'teal', 'java', 'sparql', 'ocaml', 'ocaml_interface', 'ocamllex', 'query', 'javascript', 'ql', 'typescript', 'haskell', 'help', 'regex', 'vim', 'http', 'html', 'css', 'llvm', 'graphql', 'json', 'jsonc', 'jsdoc', 'nix', 'devicetree', 'fennel', 'lua', 'python', 'c', 'cpp', 'cuda', 'yaml'},
 
   higlight = {
     enable = true,
@@ -23,6 +23,10 @@ require('nvim-treesitter.configs').setup {
   context_commentstring = {
     enable = true,
     enable_autocmd = false,
+  },
+
+  autotag = {
+    enable = true,
   },
 
   textsubjects = {
@@ -66,12 +70,6 @@ require('nvim-treesitter.configs').setup {
       keymaps = {
         ['af'] = '@function.outer',
         ['if'] = '@function.inner',
-
-        ['ac'] = '@conditional.outer',
-        ['ic'] = '@conditional.inner',
-
-        ['aa'] = '@parameter.outer',
-        ['ia'] = '@parameter.inner',
       },
     },
 
