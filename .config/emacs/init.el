@@ -92,11 +92,11 @@
   :demand t
   :init
   (setq evil-want-keybinding nil)
-  (setq evil-want-Y-yank-to-eol t)
+  (general-setq evil-want-Y-yank-to-eol t)
   (setq evil-split-window-below t)
   (setq evil-vsplit-window-right t)
   (general-setq evil-move-cursor-back nil)
-  (setq evil-move-beyond-eol t)
+  (general-setq evil-move-beyond-eol nil)
   (setq evil-search-module #'evil-search)
   (setq evil-ex-search-persistent-highlight nil)
   :custom
@@ -124,6 +124,8 @@
 (my/leader
   "u" #'universal-argument
   "j" #'consult-buffer
+  "ll" #'consult-imenu
+  "LL" #'consult-imenu-multi
   "rg" #'consult-ripgrep)
 
 (my/leader
@@ -178,6 +180,9 @@
  :states '(visual operator)
  :keymaps 'evil-inner-text-objects-map
  "c" #'evilnc-inner-commenter)
+
+(my/leader
+  "pp" #'project-switch-project)
 
 (my/leader
   :states '(normal visual)
@@ -375,6 +380,12 @@
    ("I" . evil-indent-plus-a-indent-up)
    ("J" . evil-indent-plus-a-indent-up-down)))
 
+(use-package evil-goggles
+  :after evil
+  :config
+  (evil-goggles-mode)
+  (evil-goggles-use-diff-faces))
+
 (use-package recentf
   :init
   (general-add-advice '(after-find-file consult-buffer)
@@ -458,9 +469,27 @@ and Vertico is not bound"
   (setq cape-file-directory-must-exist nil)
   (add-to-list 'completion-at-point-functions #'cape-file)
   (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-  (add-to-list 'completion-at-point-functions #'cape-keyword)
-  (add-to-list 'completion-at-point-functions #'cape-line)
-  (add-to-list 'completion-at-point-functions #'cape-symbol))
+  (add-to-list 'completion-at-point-functions #'cape-keyword))
+
+(use-package tempel
+  :after evil
+  :bind (:map evil-insert-state-map
+              ("C-x C-SPC" . tempel-complete)
+              ("C-x C-m" . tempel-insert))
+  :init
+  (defun my--tempel-setup-capf ()
+    (unless (seq-contains-p completion-at-point-functions #'tempel-expand #'eq)
+      (setq-local completion-at-point-functions
+                  (cons #'tempel-expand
+                        completion-at-point-functions))))
+  (general-define-key
+   :states 'insert
+   :keymaps '(override tempel-map)
+   "M-n" #'tempel-next
+   "M-p" #'tempel-previous)
+
+  (general-add-hook '(prog-mode text-mode conf-mode)
+                    #'my--tempel-setup-capf))
 
 (use-package all-the-icons
   :if (display-graphic-p))
@@ -540,9 +569,9 @@ and Vertico is not bound"
 
 (use-package lsp-pyright
   :config
-  (defun my/setup-pyright ()
-    (lsp-deferred))
-  (add-hook 'python-mode-hook #'my/setup-pyright)
+  (defun my--setup-pyright ()
+    (lsp))
+  (add-hook 'python-mode-hook #'my--setup-pyright)
   :after lsp-mode)
 
 (use-package pip-requirements)
@@ -620,12 +649,19 @@ and Vertico is not bound"
   :bind ("C-x b" . ibuffer))
 
 (use-package vertico
+  :demand t
+  :bind (:map vertico-map
+              ("C-j" . vertico-next)
+              ("C-k" . vertico-previous))
   :custom
   (vertico-cycle t)
   :init
   (vertico-mode))
 
-(use-package consult)
+(use-package consult
+  :demand t
+  :bind (:map minibuffer-local-map
+              ("C-r" . consult-history)))
 
 (use-package savehist
   :init
@@ -689,7 +725,7 @@ and Vertico is not bound"
   :config
   (defun my/org-mode-setup ()
     (org-indent-mode)
-    (variable-pitch-mode 1)
+    (display-line-numbers-mode -1)
     (auto-fill-mode 0)
     (visual-line-mode 1)
     (setq-local evil-auto-indent nil))
@@ -704,7 +740,9 @@ and Vertico is not bound"
 
 (use-package org-superstar
   :after org
-  :hook (org-mode . org-superstar-mode))
+  :hook (org-mode . org-superstar-mode)
+  :config
+  (general-setq org-superstar-special-todo-items t))
 
 (use-package org-appear
   :after org
@@ -713,6 +751,10 @@ and Vertico is not bound"
   (setq org-appear-trigger 'manual)
   (add-hook 'evil-insert-state-entry-hook #'org-appear-manual-start nil t)
   (add-hook 'evil-insert-state-exit-hook #'org-appear-manual-stop nil t))
+
+(use-package mixed-pitch
+  :hook
+  (text-mode . mixted-pitch-mode))
 
 (defun my/org-mode-visual-fill ()
   (setq visual-fill-column-width 100
