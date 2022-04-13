@@ -9,6 +9,8 @@ tags
 .eslintcache
 
 # output
+Session.vim
+*.pnpm-debug.log
 *.so
 *.o
 *.bin

@@ -20,3 +20,10 @@
 	    (redisplay)))
 
 (setq read-process-output-max (* 1024 1024))
+
+(push '(tool-bar-lines . 0) default-frame-alist)
+;; (push '(menu-bar-lines . 0) default-frame-alist)
+(push '(vertical-scroll-bars) default-frame-alist)
+(setq frame-inhibit-implied-resize t)
+(unless after-init-time
+  (setq-default mode-line-format nil))
