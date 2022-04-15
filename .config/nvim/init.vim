@@ -145,6 +145,11 @@ augroup init
     autocmd TextYankPost * silent! lua vim.highlight.on_yank { higroup='IncSearch', timeout=100, on_macro=true }
     autocmd InsertEnter,WinLeave,FocusLost * setlocal nocursorline
     autocmd InsertLeave,WinEnter,FocusGained * if mode() !=# 'i' | let &l:cursorline=1 | endif
+    autocmd InsertEnter * setlocal listchars-=trail:·
+    autocmd InsertLeave * setlocal listchars+=trail:·
+    autocmd UIEnter * if v:event.chan ==# 0 | call chansend(v:stderr, "\x1b[>1u") | endif
+    autocmd UILeave * if v:event.chan ==# 0 | call chansend(v:stderr, "\x1b[<1u") | endif
+    autocmd BufNewFile * autocmd BufWritePre <buffer> ++once call mkdir(expand('%:h'), 'p')
     autocmd TermClose *
             \ if !v:event.status |
             \   let info = nvim_get_chan_info(&channel) |

@@ -1,12 +1,11 @@
 local M = {}
 
 local on_attach = function(_, bufnr)
-  local api = vim.api
   local b = vim.bo
   local u = require('jw.utils')
 
   local function nset(lhs, rhs)
-    vim.keymap.set('n', lhs, rhs, { buffer = bufnr })
+    vim.keymap.set('n', lhs, rhs, { silent = true, buffer = bufnr })
   end
 
   b.omnifunc = 'v:lua.vim.lsp.omnifunc'
@@ -17,33 +16,32 @@ local on_attach = function(_, bufnr)
   nset('gd', '<cmd>lua vim.lsp.buf.declaration()<cr>')
   nset('K', '<cmd>lua vim.lsp.buf.hover()<cr>')
   nset('gD', '<cmd>lua vim.lsp.buf.implementation()<cr>')
-  nset('<C-k>', '<cmd>lua vim.lsp.buf.signature_help()<cr>')
+  nset('<M-k>', '<cmd>lua vim.lsp.buf.signature_help()<cr>')
   nset('<leader>wa', '<cmd>lua vim.lsp.buf.add_workspace_folder()<cr>')
   nset('<leader>wr', '<cmd>lua vim.lsp.buf.remove_workspace_folder()<cr>')
   nset('<leader>wl', '<cmd>lua print(vim.inspect(vim.lsp.buf.list_workspace_folders()))<cr>')
 
-  nset('<leader>ws', function()
-    require('fzf-lua').lsp_workspace_symbols()
-  end)
 
-  nset('<leader>ca', function()
-    require('fzf-lua').lsp_code_actions()
-  end)
 
-  nset('<leader>td', '<cmd>lua vim.lsp.buf.type_definition()<cr>')
+  nset('<leader>it', '<cmd>lua vim.lsp.buf.type_definition()<cr>')
   nset('<leader>rn', '<cmd>lua vim.lsp.buf.rename()<cr>')
   -- nsetk('<leader>ca', '<cmd>lua vim.lsp.buf.code_action()<cr>')
-  nset('<leader>gr', '<cmd>lua vim.lsp.buf.references()<cr>')
+  nset('<leader>ir', '<cmd>Telescope lsp_references<cr>')
 
-  local function cmd(lhs, rhs)
-    return api.nvim_buf_add_user_command(bufnr, lhs, rhs, {})
-  end
+  local cmd = u.buf_add_cmd(bufnr)
+  local leader = u.leader
 
-  local buflsp = vim.lsp.buf
-  cmd('Format', u.lambda(buflsp.formatting_sync, {}, 1000))
-  cmd('Symbols', buflsp.document_symbol)
-  cmd('Calledby', buflsp.incoming_calls)
-  cmd('Calling', buflsp.outgoing_calls)
+  leader('ws', '<cmd>Telescope lsp_workspace_symbols<cr>', {silent = true, buffer = bufnr})
+  leader('bs', '<cmd>Telescope lsp_document_symbols<cr>', {silent = true, buffer = bufnr})
+  leader('ca', '<cmd>lua vim.lsp.buf.code_action()<CR>', {buffer = bufnr, silent = true})
+  leader('lf', '<cmd>lua vim.lsp.buf.formatting_sync()<CR>', {buffer = bufnr, silent = true})
+  leader('ii', '<cmd>lua vim.lsp.buf.incoming_calls()<CR>', {buffer = bufnr, silent = true})
+  leader('io', '<cmd>lua vim.lsp.buf.outgoing_calls()<CR>', {buffer = bufnr, silent = true})
+  leader('is', '<cmd>lua vim.lsp.buf.document_symbol()<CR>', {buffer = bufnr, silent = true})
+  cmd('Format', '<cmd>lua vim.lsp.buf.formatting_sync()<CR>', {})
+  cmd('Symbols', '<cmd>lua vim.lsp.buf.document_symbol()<CR>', {})
+  cmd('Calledby', '<cmd>lua vim.lsp.buf.incoming_calls()<CR>', {})
+  cmd('Calling', '<cmd>lua vim.lsp.buf.outgoing_calls()<CR>', {})
 
   local ok,sig = pcall(require, "lsp_signature")
   if ok then
@@ -57,7 +55,7 @@ function M.setup()
   local capabilities = vim.lsp.protocol.make_client_capabilities()
   capabilities = cmp_lsp.update_capabilities(capabilities)
   capabilities.textDocument.completion.completionItem.snippetSupport = true
-  local servers = { 'rust_analyzer', 'gopls', 'pyright', 'ocamllsp', 'graphql', 'vimls', 'yamlls' }
+  local servers = { 'dockerls', 'rust_analyzer', 'gopls', 'pyright', 'ocamllsp', 'graphql', 'vimls', 'yamlls' }
   vim.lsp.handlers['textDocument/publishDiagnostics'] = vim.lsp.with(
     vim.lsp.diagnostic.on_publish_diagnostics,
     {

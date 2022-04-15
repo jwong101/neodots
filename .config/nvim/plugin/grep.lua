@@ -50,7 +50,7 @@ local function grep(loclist)
   end
 end
 
-local addcmd = vim.api.nvim_add_user_command
+local addcmd = vim.api.nvim_create_user_command
 addcmd('Grep', grep(false), {nargs = '+', complete = 'file_in_path'})
 addcmd('LGrep', grep(true), {nargs = '+', complete = 'file_in_path'})
 vim.keymap.set('n', 'g/', ":Grep ", { silent = false })

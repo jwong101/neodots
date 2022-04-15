@@ -24,11 +24,24 @@ function M.partial(func, arg)
   end
 end
 
+function M.leader(lhs, rhs, opts)
+  opts = opts or {}
+  vim.keymap.set('n', '<leader>' .. lhs, rhs, opts)
+end
+
 function M.lambda(func, ...)
   local varg = arg
   return function(...)
     return func(unpack(varg), ...)
   end
+end
+
+function M.add_cmd(...)
+  return vim.api.nvim_create_user_command(...)
+end
+
+function M.buf_add_cmd(bufnr)
+  return M.partial(vim.api.nvim_buf_create_user_command, bufnr)
 end
 
 function M.reload(module)

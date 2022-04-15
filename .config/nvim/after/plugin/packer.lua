@@ -1,5 +1,5 @@
-
-local add_cmd = vim.api.nvim_add_user_command
+local u = require('jw.utils')
+local add_cmd = u.add_cmd
 
 add_cmd('PackerClean', function()
   package.loaded['jw.plugins'] = false

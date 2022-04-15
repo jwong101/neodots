@@ -31,6 +31,6 @@ local function tjump(arg)
 end
 
 
-local addcmd = vim.api.nvim_add_user_command
+local addcmd = vim.api.nvim_create_user_command
 addcmd('Tselect', function(cargs) tselect(cargs.args) end, { nargs = 1, complete = 'tag' })
 addcmd('Tjump', function(cargs) tjump(cargs.args) end, { nargs = 1, complete = 'tag' })

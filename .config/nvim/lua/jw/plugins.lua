@@ -209,7 +209,16 @@ return packer.startup {
       requires = 'nvim-lua/plenary.nvim',
     }
 
-    local use_telescope = false
+    use 'mfussenegger/nvim-dap'
+
+    use {
+      'rcarriga/nvim-dap-ui',
+      requires = 'nvim-dap',
+    }
+
+    use 'theHamsta/nvim-dap-virtual-text'
+
+    local use_telescope = true
 
     use {
       'nvim-telescope/telescope.nvim',
@@ -218,8 +227,33 @@ return packer.startup {
     }
 
     use {
-      'nvim-telescope/telescope-fzf-native.nvim',
+      'nvim-telescope/telescope-frecency.nvim',
+      requires = {'nvim-telescope/telescope.nvim', 'tami5/sqlite.lua', },
       opt = not use_telescope,
+    }
+
+    use {
+      'nvim-telescope/telescope-ui-select.nvim',
+      opt = true,
+    }
+
+    use {
+      'stevearc/dressing.nvim'
+    }
+
+    use {
+      'natecraddock/telescope-zf-native.nvim',
+      opt = not use_telescope,
+    }
+
+    use {
+      'nvim-telescope/telescope-project.nvim',
+      opt = not use_telescope,
+    }
+
+    use {
+      'nvim-telescope/telescope-fzf-native.nvim',
+      opt = true,
       run = 'make',
       requires = 'nvim-telescope/telescope.nvim',
     }

@@ -46,7 +46,7 @@ cmp.setup {
 
     ['<C-e>'] = cmp.mapping(function(fallback)
       if cmp.visible() then
-        cmp.mapping.abort()
+        cmp.abort()
       else
         fallback()
       end
