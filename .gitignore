@@ -1,3 +1,4 @@
 Session.vim
 *.zwc
+*.elc
 packer_compiled.lua

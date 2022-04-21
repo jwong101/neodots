@@ -36,7 +36,8 @@ emacs-lisp-mode
 (star "(let* (" p ")" n> r> ")")
 (rec "(letrec (" p ")" n> r> ")")
 (command "(defun " p " (" p ")\n  \"" p "\"" n> "(interactive)" n> r> ")")
-(lex ";; ; " (file-name-nondirectory (buffer-file-name)) " -*- lexical-binding:t -*-")
+(foot "(provide '" (file-name-base (buffer-file-name))")" n> ";;; " (file-name-nondirectory (buffer-file-name)) " ends here")
+(lex ";;; " (file-name-nondirectory (buffer-file-name)) " -*- lexical-binding: t; -*-")
 
 eshell-mode
 

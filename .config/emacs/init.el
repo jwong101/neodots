@@ -1,5 +1,6 @@
 ;;; init.el --- my initialization file. -*- lexical-binding: t; -*-
 
+;;; Code:
 (setq gc-cons-threshold most-positive-fixnum)
 (setq user-full-name "Joshua Wong")
 (setq user-mail-address "joshuawong@anticentri.st")
@@ -80,7 +81,7 @@
 
 (cl-pushnew (expand-file-name "lisp" user-emacs-directory)
             load-path :test #'string=)
-
+(require 'jw-lib)
 (use-package diminish)
 
 (use-package general
@@ -116,13 +117,35 @@
   (setq evil-vsplit-window-right t)
   (general-setq evil-move-cursor-back nil)
   (general-setq evil-move-beyond-eol nil)
-  (setq evil-search-module #'evil-search)
+  (setq evil-symbol-word-search t)
+  (setq evil-ex-visual-char-range t)
+  (setq evil-ex-search-vim-style-regexp t)
   (setq evil-ex-search-persistent-highlight nil)
+  (setq evil-ex-interactive-search-highlight 'selected-window)
   :custom
   (evil-undo-system 'undo-redo)
   (evil-want-C-u-scroll t)
   (evil-kbd-macro-suppress-motion-error t)
   :config
+  (evil-select-search-module 'evil-search-module #'evil-search)
+  (advice-add #'evil-visual-update-x-selection :override #'ignore)
+  (jw-add-hook! 'after-change-major-mode-hook
+    (defun my--update-evil-shiftwidth ()
+      "Update `evil-shift-width' to match `tab-width'."
+      (setq-local evil-shift-width tab-width)))
+  (defun my--disable-ex-highlights-h ()
+    "Disable ex search buffer highlights."
+    (interactive)
+    (when (evil-ex-hl-active-p 'evil-ex-search)
+      (evil-ex-nohighlight)))
+  (add-hook 'evil-insert-state-entry-hook #'my--disable-ex-highlights-h)
+  (with-eval-after-load 'eldoc
+    (eldoc-add-command 'evil-normal-state
+                       'evil-insert
+                       'evil-change
+                       'evil-delete
+                       'evil-replace))
+
   (evil-mode 1)
   (setq evil-normal-state-cursor '(box "orchid")
         evil-normal-state-cursor '(box "Orange")
@@ -142,12 +165,19 @@
   :config
   (defun my--evil-inhibit-escape-in-minibuffer-h ()
     "inhibit evil escape in the minibuffer"
+    (interactive)
     (minibufferp))
   (add-hook 'evil-escape-inhibit-functions #'my--evil-inhibit-escape-in-minibuffer-h))
+
+(declare-function general-auto-unbind-keys "general")
+(declare-function general-evil-setup "general")
 
 (general-auto-unbind-keys)
 
 (general-evil-setup)
+
+(declare-function general-add-advice "general")
+(declare-function general-nmap "general")
 
 (general-create-definer my/leader
   :states 'normal
@@ -175,17 +205,7 @@
 (keymap-set 'evil-window-map "C-u" #'scroll-other-window-down)
 
 
-
-(general-define-key
- :states '(normal visual)
- :keymaps '(override lsp-mode-map)
- "gd" #'lsp-find-definition
- "K" #'lsp-ui-doc-glance)
-
-(general-define-key
- :states '(normal insert)
- :keymaps '(override lsp-mode-map)
- "M-k" #'lsp-signature-toggle-full-docs)
+(general-nmap "C-l" #'my--disable-ex-highlights-h)
 
 
 (general-define-key
@@ -195,7 +215,10 @@
  "C-e" #'evil-end-of-line)
 
 (my/leader
-  "pp" #'project-switch-project)
+  "pp" #'project-switch-project
+  "pa" #'project-async-shell-command
+  "pe" #'project-eshell
+  "pg" #'magit-project-status)
 
 (general-setq uniquify-buffer-name-style 'forward)
 (general-setq find-file-visit-truename t
@@ -231,9 +254,9 @@
 
 (defun my-visible-buffers ()
   "Return a list of visible buffers."
-(mapcar #'window-buffer
-        (seq-mapcat (lambda (frame) (window-list frame 1))
-                    (visible-frame-list))))
+  (mapcar #'window-buffer
+          (seq-mapcat (lambda (frame) (window-list frame 1))
+                      (visible-frame-list))))
 
 (use-package autorevert
   :straight (:type built-in)
@@ -266,7 +289,10 @@
   "Letvar for inhibiting `my/switch-buffer-hook'. Do not set this directly.")
 
 (defun my/run-switch-buffer-hooks-a (orig-fn buffer-or-name &rest args)
-  "Run hooks from `my/switch-buffer-hook' in buffer if it has changed."
+  "Run hooks from `my/switch-buffer-hook' in buffer if it has changed.
+ORIG-FN should be buffer switching functions like `switch-to-buffer' or
+`display-buffer'. BUFFER-OR-NAME is the buffer to switch to and ARGS
+are passed to the next function."
   (let ((gc-cons-threshold most-positive-fixnum))
     (if (or my/inhibit-switch-buffer-hooks
             (eq (current-buffer) (get-buffer buffer-or-name))
@@ -281,7 +307,9 @@
           buffer)))))
 
 (defun my/run-switch-to-next-prev-buffers-a (orig-fn &rest args)
-  "Run hooks from `my/switch-buffer-hook' in the new buffer."
+  "Run hooks from `my/switch-buffer-hook' in the new buffer.
+ORIG-FN is the function we are adding the advice to and
+ARGS is self explanatory."
   (let ((gc-cons-threshold most-positive-fixnum))
     (if my/inhibit-switch-buffer-hooks
         (apply orig-fn args)
@@ -324,6 +352,7 @@
 (defvar my/--last-window nil)
 
 (defun my/run-switch-window-hooks-h ()
+  "Run hooks in `my/switch-window-hook'."
   (let ((gc-cons-threshold most-positive-fixnum))
     (unless (or my/--inhibit-switch-window-hooks
                 (eq my/--last-window (selected-window))
@@ -332,6 +361,7 @@
         (run-hooks 'my/switch-window-hook)
         (setq my/--last-window (selected-window))))))
 
+(declare-function general-add-hook "general")
 (general-add-hook 'buffer-list-update-hook #'my/run-switch-window-hooks-h)
 
 (defvar my/switch-frame-hook nil
@@ -343,6 +373,7 @@
 (defvar my/--last-frame nil)
 
 (defun my/run-switch-frame-hooks-h (&rest _)
+  "Run hooks in `my/switch-frame-hook'."
   (unless (or my/--inhibit-switch-frame-hooks
               (eq my/--last-frame (selected-frame))
               (frame-parameter nil 'parent-frame))
@@ -431,6 +462,7 @@
 
 (use-package evil-goggles
   :after evil
+  :functions evil-goggles-mode
   :init
   (setq evil-goggles-duration 0.1
         evil-goggles-pulse nil
@@ -439,16 +471,18 @@
   :config
   (evil-goggles-mode))
 
+(general-with 'evil
+  (general-def 'normal "M" #'evil-set-marker))
+
 (use-package recentf
+  :functions (recentf-cleanup recentf-save-list)
   :init
-  (general-add-advice '(after-find-file consult-buffer)
+  (general-add-advice '(after-find-file consult-buffer consult-recent-file)
                       :before
                       (lambda (&rest _)
-                        (recentf-mode)
-                        nil
-                        t))
+                        (recentf-mode) t))
   :config
-  (general-setq recentf-max-saved-items 1000)
+  (general-setq recentf-max-saved-items 200)
   (defun my--recent-file-truename (file)
     (if (or (not (file-remote-p file))
             (equal "sudo" (file-remote-p file 'method)))
@@ -466,6 +500,11 @@
                                nil)
                            #'my--recentf-touch-buffer-h))
   (require 'jw-lib)
+  (advice-add 'recentf-load-list :around #'jw-shutup-a)
+  (jw-run-with-interval 300 10
+                        (jw-shutup
+                         (when recentf-mode
+                           (recentf-save-list))))
   (jw-add-hook! dired-mode-hook
     (defun my--recentf-add-dired-directory-h ()
       "Add dired directories to recentf file list."
@@ -484,6 +523,7 @@
   (defun my--colorize-compilation-buffer ()
     "Colorize the compilation buffer."
     (require 'ansi-color)
+    (declare-function ansi-color-apply-on-region "ansi-color")
     (when (eq major-mode 'compilation-mode)
       (ansi-color-apply-on-region compilation-filter-start (point-max))))
   (general-add-hook 'compilation-filter-hook #'my--colorize-compilation-buffer))
@@ -496,20 +536,20 @@
 
 (use-package corfu
   :after vertico
+  :functions (global-corfu-mode corfu-insert corfu-mode)
   :demand
   :init
   (setq corfu-cycle t)
-  (corfu-global-mode)
+  (global-corfu-mode)
   (defun my/corfu-enable-in-minibuffer ()
     "Enable Corfu in the minibuffer if `completion-at-point' is bound
-and Vertico is not bound"
+and Vertico is not bound."
     (when (and (where-is-internal #'completion-at-point (list (current-local-map)))
                (not (bound-and-true-p vertico--input)))
       (corfu-mode 1)))
   (add-hook 'minibuffer-setup-hook #'my/corfu-enable-in-minibuffer)
   (general-define-key
-   :states '(insert emacs)
-   :keymaps '(override completion-in-region-mode-map corfu-map)
+   :keymaps '(completion-in-region-mode-map corfu-map)
    "C-j" #'next-line
    "C-k" #'previous-line)
   (defun +my--corfu-insert-send ()
@@ -541,6 +581,7 @@ or comint mode."
 
 (use-package kind-icon
   :after (corfu svg-lib)
+  :functions kind-icon-margin-formatter
   :custom
   (kind-icon-default-face 'corfu-default)
   :config
@@ -556,7 +597,7 @@ or comint mode."
   :mode ("\\.\\'" . pdf-view-mode)
   :magic ("%PDF" . pdf-view-mode)
   :init
-  (defun my--pdf-supress-large-file-prompts-a (size op-type filename &optional offer-raw)
+  (defun my--pdf-supress-large-file-prompts-a (_size _op-type filename &optional _offer-raw)
     "Silence \"File *.pdf is large... prompts for pdfs."
     (string-match-p "\\.pdf\\'" filename))
 
@@ -577,8 +618,8 @@ or comint mode."
   :config
   (defun my--dont-prettify-saveplace-cache-a (fn)
     "Don't prettify the cache."
-    (cl-letf ((#'pp #'prin1))
-      (funcall fn)))
+    (cl-letf (((symbol-function 'pp) #'prin1))
+      (funcall #'fn)))
   (advice-add #'save-place-alist-to-file :around
               #'my--dont-prettify-saveplace-cache-a))
 
@@ -598,27 +639,47 @@ or comint mode."
   :straight (ligature :type git :host github :repo "mickeynp/ligature.el")
   :config
   (ligature-set-ligatures t '("-|" "-~" "---" "-<<" "-<" "--" "->" "->>" "-->" "///" "/=" "/=="
-                                      "/>" "//" "/*" "*>" "***" "*/" "<-" "<<-" "<=>" "<=" "<|" "<||"
-                                      "<|||" "<|>" "<:" "<>" "<-<" "<<<" "<==" "<<=" "<=<" "<==>" "<-|"
-                                      "<<" "<~>" "<=|" "<~~" "<~" "<$>" "<$" "<+>" "<+" "</>" "</" "<*"
-                                      "<*>" "<->" "<!--" ":>" ":<" ":::" "::" ":?" ":?>" ":=" "::=" "=>>"
-                                      "==>" "=/=" "=!=" "=>" "===" "=:=" "==" "!==" "!!" "!=" ">]" ">:"
-                                      ">>-" ">>=" ">=>" ">>>" ">-" ">=" "&&&" "&&" "|||>" "||>" "|>" "|]"
-                                      "|}" "|=>" "|->" "|=" "||-" "|-" "||=" "||" ".." ".?" ".=" ".-" "..<"
-                                      "..." "+++" "+>" "++" "[||]" "[<" "[|" "{|" "??" "?." "?=" "?:" "##"
-                                      "###" "####" "#[" "#{" "#=" "#!" "#:" "#_(" "#_" "#?" "#(" ";;" "_|_"
-                                      "__" "~~" "~~>" "~>" "~-" "~@" "$>" "^=" "]#"))
-  (global-ligature-mode t))
+                             "/>" "//" "/*" "*>" "***" "*/" "<-" "<<-" "<=>" "<=" "<|" "<||"
+                             "<|||" "<|>" "<:" "<>" "<-<" "<<<" "<==" "<<=" "<=<" "<==>" "<-|"
+                             "<<" "<~>" "<=|" "<~~" "<~" "<$>" "<$" "<+>" "<+" "</>" "</" "<*"
+                             "<*>" "<->" "<!--" ":>" ":<" ":::" "::" ":?" ":?>" ":=" "::=" "=>>"
+                             "==>" "=/=" "=!=" "=>" "===" "=:=" "==" "!==" "!!" "!=" ">]" ">:"
+                             ">>-" ">>=" ">=>" ">>>" ">-" ">=" "&&&" "&&" "|||>" "||>" "|>" "|]"
+                             "|}" "|=>" "|->" "|=" "||-" "|-" "||=" "||" ".." ".?" ".=" ".-" "..<"
+                             "..." "+++" "+>" "++" "[||]" "[<" "[|" "{|" "??" "?." "?=" "?:" "##"
+                             "###" "####" "#[" "#{" "#=" "#!" "#:" "#_(" "#_" "#?" "#(" ";;" "_|_"
+                             "__" "~~" "~~>" "~>" "~-" "~@" "$>" "^=" "]#"))
+ (global-ligature-mode t))
 
 (use-package rustic
   :mode ("\\.rs$" . rustic-mode)
+  :preface
+  (setq rust-prettify-symbols-alist nil)
+  :functions (rustic-cargo-build
+               rustic-cargo-check
+               rustic-cargo-outdated
+               rustic-cargo-fmt
+               rustic-cargo-run
+               rustic-cargo-bench
+               rustic-cargo-current-test
+               rustic-cargo-test)
   :config
   (setq rustic-indent-method-chain t)
-  (setq rustic-analyzer-command '("~/.local/bin/rust-analyzer")))
+  (setq rustic-analyzer-command '("~/.local/bin/rust-analyzer"))
+  (my/leader
+    :keymaps 'rustic-mode-map
+    "ma" #'rustic-cargo-build
+    "mc" #'rustic-cargo-check
+    "mf" #'rustic-cargo-fmt
+    "mo" #'rustic-cargo-outdated
+    "mr" #'rustic-cargo-run
+	"mB" #'rustic-cargo-bench
+    "mt" #'rustic-cargo-current-test
+    "SPC mt" #'rustic-cargo-test))
 
 (use-package orderless
   :init
-  (setq completion-styles '(orderless))
+  (setq completion-styles '(orderless basic))
   completion-category-defaults nil
   completion-category-overrides '((file (styles . (partial-completion)))))
 
@@ -642,11 +703,13 @@ or comint mode."
 
 (use-package tempel
   :after evil
+  :functions (tempel-expand)
   :bind (:map evil-insert-state-map
               ("C-x C-SPC" . tempel-complete)
               ("C-x C-m" . tempel-insert))
   :init
   (defun my--tempel-setup-capf ()
+    "Add `tempel-expand' to `completion-at-point-functions'."
     (unless (seq-contains-p completion-at-point-functions #'tempel-expand #'eq)
       (setq-local completion-at-point-functions
                   (cons #'tempel-expand
@@ -662,6 +725,10 @@ or comint mode."
 
 (use-package all-the-icons
   :if (display-graphic-p))
+
+(use-package makefile-executor
+  :general
+  (my/leader "pm" #'makefile-executor-execute-project-target))
 
 (use-package dired
   :straight (:type built-in)
@@ -687,7 +754,32 @@ or comint mode."
   (advice-add #'dired-buffer-stale-p
               :before-until
               #'my--dired-no-revert-in-virtual-buffers-a)
-  (keymap-set dired-mode-map "C-c C-e" #'wdired-change-to-wdired-mode))
+  (general-def 'normal dired-mode-map
+    "cd" #'dired-create-directory
+    "cc" #'dired-do-rename
+    "cm" #'dired-do-chmod
+    "ch" #'dired-do-chown
+    "cg" #'dired-do-chgrp
+    "o" #'dired-do-shell-command))
+
+(use-package wdired
+  :after dired
+  :straight (:type built-in)
+  :general ('normal dired-mode-map "w" #'wdired-change-to-wdired-mode)
+  :config
+  (setq wdired-create-parent-directories t
+        wdired-allow-to-change-permissions t)
+  (general-def 'normal wdired-mode-map
+    "x" #'wdired-toggle-bit
+    "RET" #'wdired-finish-edit))
+
+(use-package dired-x
+  :straight (:type built-in)
+  :defines (dired-clean-confirm-killing-deleted-buffers)
+  :hook (dired-mode . dired-omit-mode)
+  :config
+  (setq dired-omit-verbose nil)
+  (setq dired-clean-confirm-killing-deleted-buffers nil))
 
 (use-package dired-rsync
   :general (dired-mode-map "C-c C-r" #'dired-rsync))
@@ -696,6 +788,7 @@ or comint mode."
   :defer t
   :commands fd-dired
   :init
+  (jw-global-remap! 'find-dired #'fd-dired)
   (my/leader
     "ff" #'fd-dired))
 
@@ -751,23 +844,47 @@ or comint mode."
   (setq lsp-use-plists t)
   (setq lsp-idle-delay 0.1)
   (setq lsp-enable-snippet nil)
+  :functions (lsp-find-definition
+              lsp-signature-toggle-full-docs
+              lsp-code-actions-at-point
+              lsp-find-references
+              lsp-rename)
   :commands
   (lsp lsp-deferred)
   :config
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(override lsp-mode-map)
+   "gd" #'lsp-find-definition
+   "K" #'lsp-ui-doc-glance)
+
+  (general-define-key
+   :states '(normal insert)
+   :keymaps '(override lsp-mode-map)
+   "M-k" #'lsp-signature-toggle-full-docs)
+
+
+  ;; (jw-add-hook! 'lsp-mode-hook
+  ;;   (defun my--setup-lsp-keybinds-h ()
+  ;;     "Setup keybinds in lsp mode."
+  ;;     (my/leader
+  ;;       :states '(normal visual)
+  ;;       "ls" #'consult-lsp-file-symbols
+  ;;       )))
+
   (my/leader
-  :states '(normal visual)
-  :keymaps '(override lsp-mode-map)
-  "ls" #'consult-lsp-file-symbols
-  "lS" #'consult-lsp-symbols
-  "ld" #'lsp-ui-peek-find-definitions
-  "la" #'lsp-code-actions-at-point
-  "l;" #'lsp-find-references
-  "lr" #'lsp-rename)
+    :states '(normal visual)
+    :keymaps '(override lsp-mode-map)
+    "ls" #'consult-lsp-file-symbols
+    "ws" #'consult-lsp-symbols
+    "ld" #'lsp-ui-peek-find-definitions
+    "la" #'lsp-code-actions-at-point
+    "l;" #'lsp-find-references
+    "rn" #'lsp-rename)
   :hook
   ((c-mode . lsp-deferred)
    (c++-mode . lsp-deferred)
    (python-mode . lsp-deferred)
-   (haskell-mode . lsp-deferred)
    (haskell-literate-mode . lsp-deferred)))
 
 (use-package web-mode
@@ -879,7 +996,43 @@ or comint mode."
              :repo "ocaml/dune"
              :files ("editor-integration/emacs/*.el")))
 
-(use-package haskell-mode)
+(use-package haskell-mode
+  :functions (haskell-indentation-indent-line
+               haskell-indentation-newline-and-indent)
+  :init
+  (setq haskell-process-show-overlays nil
+        haskell-process-suggest-remove-import-lines t
+        haskell-process-auto-import-loaded-modules t)
+  (defun +haskell/evil-open-above ()
+    "Opens a line above."
+    (interactive)
+    (evil-beginning-of-line)
+    (haskell-indentation-newline-and-indent)
+    (evil-previous-line)
+    (haskell-indentation-indent-line)
+    (evil-append-line nil))
+
+  (defun +haskell/evil-open-below ()
+    "Opens a line below in haskell mode."
+    (interactive)
+    (evil-append-line nil)
+    (haskell-indentation-newline-and-indent))
+
+  (general-nmap
+    :keymaps 'haskell-mode-map
+    "o" #'+haskell/evil-open-below
+    "O" #'+haskell/evil-open-above)
+
+  (my/leader
+    :keymaps 'haskell-mode-map
+    "mp" #'haskell-cabal-visit-file
+    "ma" #'haskell-process-cabal-build))
+
+(use-package lsp-haskell
+  :after lsp-mode
+  :init
+  (setq lsp-haskell-formatting-provider "stylish-haskell")
+  (add-hook 'haskell-mode-local-vars-hook #'lsp-deferred 'append))
 
 (use-package nix-mode
   :mode "\\.nix\\'")
@@ -887,6 +1040,7 @@ or comint mode."
 (use-package helpful
   :commands helpful--read-symbol
   :hook (helpful-mode . visual-line-mode)
+  :functions helpful-kill-buffers
   :general
   (general-def help-map
     "RET" #'helpful-at-point
@@ -900,8 +1054,8 @@ or comint mode."
   (setq apropos-do-all t)
   (defun my--use-helpful-a (fn &rest args)
     "Force FN to use helpful instead of the default."
-    (cl-letf ((#'describe-function #'helpful-function)
-              (#'describe-variable #'helpful-variable))
+    (cl-letf (((symbol-function 'describe-function) #'helpful-function)
+              ((symbol-function 'describe-variable) #'helpful-variable))
       (apply fn args)))
   (with-eval-after-load 'apropos
     (dolist (fun-bt '(apropos-function apropos-macro apropos-command))
@@ -915,6 +1069,8 @@ or comint mode."
        (lambda (button)
          (helpful-variable (button-get button 'apropos-symbol))))))
   :config
+  (my/leader
+    "hk" #'helpful-kill-buffers)
   (general-def 'normal helpful-mode
     :definer 'minor-mode
     "q" #'quit-window))
@@ -927,34 +1083,109 @@ or comint mode."
 
 (use-package doom-modeline
   :after all-the-icons
+  :functions doom-modeline-mode
   :init (doom-modeline-mode 1))
 
 (use-package info-colors
   :after info
   :hook (Info-selection . info-colors-fontify-node))
 
+(use-package apheleia
+  :straight (apheleia :host github :repo "raxod502/apheleia")
+  :general
+  (my/leader "=" #'apheleia-format-buffer))
+
+(use-package pass)
+(use-package password-store)
+(use-package password-store-otp)
+
+(declare-function password-store-dir "password-store")
+
+(jw-defadvice! +my--pass-use-dir-env-a (entry)
+  "Return a string with the file content of ENTRY."
+  :override #'auth-source-pass--read-entry
+  (with-temp-buffer
+    (insert-file-contents
+     (expand-file-name (format "%s.gpg" entry) (password-store-dir)))
+    (buffer-substring-no-properties (point-min) (point-max))))
+
+(jw-after! pass
+  (evil-set-initial-state 'pass-mode 'emacs)
+  (general-def pass-mode-map
+    "j" #'pass-next-entry
+    "k" #'pass-prev-entry
+    "d" #'pass-kill
+    "\C-j" #'pass-next-directory
+    "\C-k" #'pass-prev-directory)
+  (defun +pass-consult (arg pass)
+    "Use consult to store url or copy PASS depending on ARG."
+    (interactive
+     (list current-prefix-arg
+           (progn
+             (require 'consult)
+             (consult--read (password-store-list)
+                            :prompt "Pass: "
+                            :sort nil
+                            :require-match t
+                            :category 'pass))))
+    (funcall (if arg
+                 #'password-store-url
+               #'password-store-copy)
+             pass)))
+
+(auth-source-pass-enable)
+
 (use-package ibuffer
   :bind ("C-x b" . ibuffer))
 
 (use-package vertico
   :demand t
+  :straight (vertico :type git :host github :repo "minad/vertico" :files ("*.el" "extensions/*.el"))
   :bind (:map vertico-map
               ("C-j" . vertico-next)
               ("C-k" . vertico-previous))
   :custom
   (vertico-cycle t)
+  (vertico-count 17)
   :init
+  (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy)
+  (add-hook 'minibuffer-setup-hook #'vertico-repeat-save)
   (vertico-mode))
 
 (use-package consult
   :demand t
+  :functions (consult-locate
+               consult-apropos
+               consult-man
+               consult-imenu
+               consult-bookmark
+               consult-yank-pop)
   :hook (completion-list-mode . consult-preview-at-point-mode)
   :bind (:map minibuffer-local-map
               ("C-r" . consult-history))
   :init
   (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
+  (advice-add #'multi-occur :override #'consult-multi-occur)
+  (jw-global-remap!
+   'switch-to-buffer #'consult-buffer
+   'switch-to-buffer-other-window #'consult-buffer-other-window
+   'switch-to-buffer-other-frame #'consult-buffer-other-frame
+   'locate #'consult-locate
+   'apropos-command #'consult-apropos
+   'man #'consult-man
+   'imenu #'consult-imenu
+   'bookmark-jump #'consult-bookmark
+   'yank-pop #'consult-yank-pop)
+  (jw-remap! project-prefix-map
+    'project-switch-to-buffer #'consult-project-buffer)
+  ;; (advice-add #'multi-occur :override #'consult-multi-occur)
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
+  (setq consult-line-numbers-widen t
+        consult-async-min-input 2
+        consult-async-refresh-delay 0.15
+        consult-async-input-throttle 0.2
+        consult-async-input-debounce 0.1)
   :config
   (consult-customize
    consult-theme
@@ -972,20 +1203,28 @@ or comint mode."
 (use-package consult-dir
   :after (consult vertico)
   :commands (consult-dir consult-dir-jump-file)
-  :bind (:map vertico-map
-              ("C-x C-d" . consult-dir)
-              ("C-x C-j" . consult-dir-jump-file))
+  :bind (([remap list-directory] . consult-dir)
+         :map vertico-map
+         ("C-x C-d" . consult-dir)
+         ("C-x C-j" . consult-dir-jump-file))
   :init
   (my/leader
     "cd" #'consult-dir))
+
+(use-package consult-flycheck
+  :after (consult flycheck))
 
 (use-package savehist
   :init
   (savehist-mode))
 
+(use-package all-the-icons-completion)
+
 (use-package marginalia
   :after vertico
+  :functions (marginalia-mode)
   :config
+  (add-hook 'marginalia-mode-hook #'all-the-icons-completion-marginalia-setup)
   (marginalia-mode)
   (general-pushnew '(project-find-file . project-file)
                    marginalia-command-categories)
@@ -993,17 +1232,24 @@ or comint mode."
                    marginalia-command-categories)
   (general-pushnew '(project-switch-project . file)
                    marginalia-command-categories)
+  (general-pushnew '(flycheck-error-list-set-filter . builtin)
+                   marginalia-command-categories)
   (general-pushnew '("Find file" . file)
                    marginalia-prompt-categories))
 
 (use-package embark
+  :functions (embark-prefix-help-command embark-bindings)
   :bind
-  (("C-." . embark-act)
-   ("C-;" . embark-dwim)
-   ("C-h B" . embark-bindings))
+  (("C-;" . embark-act)
+   :map minibuffer-local-map
+   ("C-c C-;" . embark-export)
+   ("C-c C-l" . embark-collect))
   :init
-  (setq prefix-help-command #'embark-prefix-help-command)
+  (my/leader
+    "aa" #'embark-act)
   :config
+  (setq prefix-help-command #'embark-prefix-help-command)
+  (jw-global-remap! #'describe-bindings #'embark-bindings)
   (add-to-list 'display-buffer-alist
                '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
                  nil
@@ -1014,6 +1260,10 @@ or comint mode."
   :demand t
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
+
+(use-package wgrep
+  :commands wgrep-change-to-wgrep-mode
+  :config (setq wgrep-auto-save-buffer t))
 
 (use-package rainbow-mode)
 
@@ -1027,6 +1277,7 @@ or comint mode."
 
 (use-package magit-todos
   :after magit
+  :functions magit-todos-mode
   :config (magit-todos-mode))
 
 (general-with-package 'compile
@@ -1035,6 +1286,22 @@ or comint mode."
 
 (use-package pkgbuild-mode)
 
+(use-package docker
+  :init
+  (add-hook 'dockerfile-mode-local-vars-hook #'lsp-deferred 'append)
+  :custom (docker-image-run-arguments '("-i" "-t" "--rm"))
+  :commands (docker))
+
+(use-package docker-tramp)
+
+(use-package dockerfile-mode)
+
+(use-package kubernetes
+  :commands (kubernetes-overview)
+  :config
+  (setq kubernetes-poll-frequency 3600
+        kubernetes-redraw-frequency 3600))
+
 (use-package info)
   ;; :config
   ;; (general-pushnew (expand-file-name "info" user-emacs-directory)
@@ -1042,6 +1309,7 @@ or comint mode."
 
 (use-package elisp-demos
   :defer t
+  :commands (elisp-demos-advice-describe-function-1 elisp-demos-advice-helpful-update)
   :init
   (advice-add 'describe-function-1 :after #'elisp-demos-advice-describe-function-1)
   (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
@@ -1079,6 +1347,7 @@ or comint mode."
    "[" nil))
 
 (use-package lispyville
+  :functions (lispyville-set-key-theme)
   :hook (lispy-mode . lispyville-mode)
   :init
   (setq lispyville-key-theme
@@ -1103,6 +1372,7 @@ or comint mode."
   (gcmh-mode 1))
 
 (use-package cl-lib-highlight
+  :functions cl-lib-highlight-warn-cl-initialize
   :ghook ('emacs-lisp-mode-hook #'cl-lib-highlight-initialize nil nil t)
   :config
   (cl-lib-highlight-warn-cl-initialize))
@@ -1111,6 +1381,7 @@ or comint mode."
   :ghook 'emacs-lisp-mode-hook)
 
 (use-package org
+  :functions (org-toggle-inline-images)
   :init
   (my/leader
     "mi" #'org-toggle-inline-images)
@@ -1150,13 +1421,15 @@ or comint mode."
 
 (use-package org-roam
   :after org
+  :defines (org-roam-v2-ack org-roam-dailies-directory)
+  :functions org-roam-db-autosync-enable
   :init
   (setq org-roam-v2-ack t)
   (setq org-roam-dailies-directory "journal/")
   :custom
   (org-roam-directory (file-truename org-directory))
   :config
-  (org-roam-setup)
+  (org-roam-db-autosync-enable)
   :bind (("C-c n f" . org-roam-node-find)
          ("C-c n r" . org-roam-node-random)
          (:map org-mode-map
@@ -1168,6 +1441,7 @@ or comint mode."
 
 (use-package evil-org
   :after org
+  :functions (evil-org-mode evil-org-agenda-set-keys)
   :hook (org-mode . (lambda ()
                       (evil-org-mode)
                       (evil-define-key 'normal evil-org-mode-map
@@ -1222,7 +1496,7 @@ or comint mode."
 
 (use-package mixed-pitch
   :hook
-  (text-mode . mixed-pitch-mode))
+  (org-mode . mixed-pitch-mode))
 
 (defun my/org-mode-visual-fill ()
   (setq visual-fill-column-width 100
@@ -1237,6 +1511,7 @@ or comint mode."
 
 (use-package emms
   :defer t
+  :functions (emms-all emms-default-players)
   :init
   (setq emms-directory (concat (getenv "XDG_DATA_HOME") "/emms")
         emms-cache-file (concat (getenv "XDG_CACHE_HOME") "/emms"))
@@ -1258,6 +1533,16 @@ or comint mode."
 (use-package restclient
   :custom (restclient-log-request nil))
 
+(use-package restclient-jq
+  :straight (restclient-jq :type git
+                           :host github
+                           :repo "pashky/restclient.el"
+                           :files ("restclient-jq.el"))
+  :after restclient)
+
+(use-package jq-mode
+  :after restclient-jq)
+
 (use-package graphql
   :after request)
 
@@ -1269,6 +1554,7 @@ or comint mode."
 
 (use-package doom-themes
   :after doom-modeline
+  :functions (doom-themes-org-config)
   :config
   (load-theme 'doom-tokyo-night t)
   (doom-themes-org-config))
@@ -1312,6 +1598,13 @@ or comint mode."
 
 (use-package flycheck
   :config
+  (declare-function flycheck-first-error "flycheck")
+  (declare-function flycheck-next-error "flycheck")
+  (declare-function flycheck-previous-error "flycheck")
+  (declare-function flycheck-error-list-next-error "flycheck")
+  (declare-function flycheck-error-list-previous-error "flycheck")
+  (declare-function flycheck-error-list-goto-error "flycheck")
+  (declare-function global-flycheck-mode "flycheck")
   (setq flycheck-emacs-lisp-load-path 'inherit)
   (delq 'new-line flycheck-check-syntax-automatically)
   (setq flycheck-idle-change-delay 1.0)
@@ -1345,17 +1638,60 @@ or comint mode."
   (global-flycheck-mode))
 
 
+(with-eval-after-load 'project
+  (add-to-list 'project-switch-commands '(magit "Magit Status" ?m)))
 
-(keymap-set 'evil-window-map "C-M-V" #'jw-delete-vertical-windows!)
-(keymap-set 'evil-window-map "C-M-S" #'jw-delete-horizontal-windows!)
+
+(declare-function jw-delete-vertical-windows! "jw-lib")
+(declare-function jw-delete-horizontal-windows! "jw-lib")
+(keymap-set evil-window-map "C-M-V" #'jw-delete-vertical-windows!)
+(keymap-set evil-window-map "C-M-S" #'jw-delete-horizontal-windows!)
+
+(use-package macrostep
+  :commands (macrostep-expand)
+  :init
+  (keymap-set emacs-lisp-mode-map "C-c e" #'macrostep-expand))
 
 (use-package eshell
   :straight (:type built-in)
   :defer t
+  :commands eshell
+  :init
+  (my/leader
+    "se" #'eshell)
   :config
+  (require '+eshell)
+  (setq eshell-hist-ignoredups t
+        eshell-kill-processes-on-exit t
+        eshell-prompt-regexp "^.* λ "
+        eshell-prompt-function #'+eshell-prompt-fn)
   (add-to-list 'eshell-modules-list 'eshell-tramp))
+
+(use-package eshell-up
+  :commands (eshell-up eshell-up-peek))
+
+(use-package esh-help
+  :after eshell
+  :functions (setup-esh-help-eldoc)
+  :config (setup-esh-help-eldoc))
+
+(use-package dash-docs
+  :config
+  (setq dash-docs-docsets-path (concat my-emacs-cache-dir "docsets/")
+        dash-docs-browser-func #'eww))
+
+(use-package just-mode)
+
+(jw-after! lisp-mode
+  (setq emacs-lisp-docstring-fill-column 80))
+
+;;; gdb
+(jw-after! gdb
+ (setq gdb-show-main t
+       gdb-many-windows t))
 
 (use-package solaire-mode
   :after doom-themes
+  :functions (solaire-global-mode)
   :config
   (solaire-global-mode +1))
