@@ -1,4 +1,4 @@
-;; -*- mode: lisp -*-
+;; -*- mode: lisp-data -*-
 
 fundamental-mode ;; Available everywhere
 
@@ -25,6 +25,7 @@ lisp-mode emacs-lisp-mode ;; Specify multiple modes
 emacs-lisp-mode
 
 (lambda "(lambda (" p ")" n> r> ")")
+(pt "(point)")
 (var "(defvar " p "\n  \"" p "\")")
 (const "(defconst " p "\n  \"" p "\")")
 (custom "(defcustom " p "\n  \"" p "\"" n> ":type '" p ")")
@@ -38,6 +39,11 @@ emacs-lisp-mode
 (command "(defun " p " (" p ")\n  \"" p "\"" n> "(interactive)" n> r> ")")
 (foot "(provide '" (file-name-base (buffer-file-name))")" n> ";;; " (file-name-nondirectory (buffer-file-name)) " ends here")
 (lex ";;; " (file-name-nondirectory (buffer-file-name)) " -*- lexical-binding: t; -*-")
+(autoload ";;;###autoload")
+(dotimes "(dotimes (" p ")" n> r> ")")
+(dolist "(dolist (" p ")" n> r> ")")
+(pc "(pcase " p ")")
+(loop "(cl-loop (" p ")" n> r> ")")
 
 eshell-mode
 
@@ -46,8 +52,8 @@ eshell-mode
 (until "until { " p " } { " p " }")
 (if "if { " p " } { " p " }")
 (if-else "if { " p " } { " p " } { " p " }")
-(unless "unless { " p " } { " p " }")
-(unless-else "unless { " p " } { " p " } { " p " }")
+(unl "unless { " p " } { " p " }")
+(unle "unless { " p " } { " p " } { " p " }")
 
 text-mode
 
@@ -72,9 +78,12 @@ c-mode :condition (re-search-backward "^\\w*$" (line-beginning-position) 'noerro
 (inc "#include <" (p (concat (file-name-base (or (buffer-file-name) (buffer-name))) ".h")) ">")
 (incc "#include \"" (p (concat (file-name-base (or (buffer-file-name) (buffer-name))) ".h")) "\"")
 
+c-mode :condition (string-match-p "^h\\(?:h\\|pp\\)?$" (file-name-extension (or (buffer-file-name) (buffer-name) "")))
+(inf "#ifndef " (p (upcase (file-name-base (or (buffer-file-name) (buffer-name)))) name) "_H_" n> "#define " (s name) "_H_" n> n r> n> "#endif // " (s name))
+
 org-mode
 
-(title "#+title: " p n "#+author: Daniel Mendler" n "#+language: en" n n)
+(title "#+title: " p n (concat "#+author: " user-full-name) n "#+language: en" n n)
 (quote "#+begin_quote" n> r> n> "#+end_quote")
 (example "#+begin_example" n> r> n> "#+end_example")
 (center "#+begin_center" n> r> n> "#+end_center")
@@ -83,3 +92,12 @@ org-mode
 (src "#+begin_src " p n> r> n> "#+end_src")
 (elisp "#+begin_src emacs-lisp" n> r> n "#+end_src"
        :post (progn (tempel-done) (org-edit-src-code)))
+
+rustic-mode
+
+(struct "struct " p " {" n>
+        p ": " p "," n "}")
+(ltu "let mut " p " = " r> ";")
+(lt "let " p " = " r> ";")
+(ltr "let " p " = &" r> ";")
+(fun "fn " p "(" p ") {" n> r> n> "}")

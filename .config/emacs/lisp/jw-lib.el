@@ -5,7 +5,8 @@
 
 ;;; Code:
 (eval-when-compile
-  (require 'cl-lib))
+  (require 'cl-lib)
+  (require 'cl-macs))
 
 (defun my--delete-all-in-direction! (direction &optional should-kill-buffer)
   "Delete all windows in DIRECTION.
@@ -18,16 +19,30 @@ If SHOULD-KILL-BUFFER is not nil,then kill the buffer in that window as well."
 (defmacro jw-run-with-interval (interval idle &rest rest)
   "Run REST every INTERVAL seconds, unless idle for IDLE seconds."
   (declare (indent 2))
-  (let ((idle-time (gensym "idle-time"))
-        (idle-secs (gensym "idle-secs")))
+  (cl-with-gensyms (idle-time idle-secs)
     `(progn
-       (run-at-time nil ,interval
-                    (lambda ()
-                      (when-let* ((,idle-time (current-idle-time))
-                                  (,idle-secs (float-time ,idle-time)))
-                        (unless (> ,idle-secs ,idle)
-                          ,@rest))))
-       (run-with-idle-timer ,idle t (lambda () ,@rest)))))
+        (run-at-time nil ,interval
+                     (lambda ()
+                       (when-let* ((,idle-time (current-idle-time))
+                                   (,idle-secs (float-time ,idle-time)))
+                         (unless (> ,idle-secs ,idle)
+                           ,@rest))))
+        (run-with-idle-timer ,idle t (lambda () ,@rest)))))
+
+(defun jw-setq-tab-width! (width &optional use-tab)
+  "Set tab width for the current buffer.
+`tab-width' and `evil-shift-width' are set to WIDTH. USE-TAB defaults to
+nil."
+  (setq-local tab-width width
+              evil-shift-width width)
+  (when use-tab (indent-tabs-mode)))
+
+(defun jw-delete-other-window ()
+  "Delete the most recently opened window."
+  (interactive)
+  (save-excursion
+    (other-window 1)
+    (delete-window)))
 
 (defmacro jw-shutup (&rest rest)
   "Run REST silently."
@@ -68,20 +83,46 @@ windows as well."
                      (when (looking-at-p "\\s-*(")
                        (lisp-indent-defform state indent-point))))
            (debug t))
-  (let ((func-forms (if (listp funs) funs
-                      (list funs)))
+  (let ((func-forms (ensure-list funs))
         (hook-forms (cl-typecase hooks
                       (consp hooks)
-                      (t (list hooks)))))
+                      (t (list hooks))))
+        (hook (gensym "hook"))
+        (func (gensym "func")))
     (when-let ((fname (cadr body)))
       (push fname func-forms))
     `(progn
        ,body
-       (dolist (hook '(,@hook-forms))
-         (dolist (func '(,@func-forms))
+       (dolist (,hook '(,@hook-forms))
+         (dolist (,func '(,@func-forms))
            ,(if del
-                `(remove-hook hook func ,local)
-              `(add-hook hook func ,(or depth add) ,local)))))))
+                `(remove-hook ,hook ,func ,local)
+              `(add-hook ,hook ,func ,(or depth add) ,local)))))))
+
+(cl-defmacro jw-add-hook (symbol args
+                          (funs &key depth local)
+                          &rest rest)
+  "Create a function named SYMBOL and add it to FUNS.
+DEPTH and LOCAL is like `add-hook'
+
+\(fn SYMBOL ((ARGS..) DEPTH LOCAL) FUNS &rest REST"
+  (declare (indent defun))
+  (let ((functions (jw-tolist funs)))
+    (cl-with-gensyms (fun)
+      `(progn
+         (defun ,symbol ,args ,@rest)
+         (dolist (,fun (list ,functions))
+           (add-hook ,fun #',symbol ,depth ,local))))))
+
+(defmacro jw-setq-hook! (hook &rest rest)
+  "Set SYMs and VALs in REST when HOOK is run.
+REST is of the form [SYM VAL].."
+  (declare (indent 1))
+  (let ((hname (cl-gentemp (symbol-name hook))))
+    `(jw-add-hook! ,hook
+       (defun ,hname ()
+         "Hook for setting mode specific variables."
+         (setq-local ,@rest)))))
 
 (defun jw-tolist (form)
   "Return FORM wrapped in a new list, unless it is already a list."
@@ -94,9 +135,9 @@ Basically a variadic version of `keymap-substitute'.
 
 \(fn KEYMAP [OLDDEF NEWDEF]... &rest REST\)"
   (declare (indent 1))
-  (let ((cells (make-symbol "cells")))
-    `(cl-loop for ,cells on (list ,@rest) by #'cddr
-              do (keymap-substitute ,keymap (car ,cells) (cadr ,cells)))))
+  (cl-with-gensyms (olddef newdef)
+    `(cl-loop for (,olddef ,newdef) on (list ,@rest) by #'cddr
+              do (keymap-substitute ,keymap ,olddef ,newdef))))
 
 (defmacro jw-global-remap! (&rest rest)
   "Remap OLDDEF with NEWDEF in `global-map'.
@@ -108,9 +149,9 @@ REST is of the form [OLDDEF NEWDEF]..."
   "Push REST into PLACE if they aren't already present.
 Like `cl-pushnew', but variadic."
   (declare (indent 1))
-  (while (keywordp (car rest))
+  (if (eq :test (car rest))
     (setq rest (cddr rest)))
-  (let ((b (make-symbol "b")))
+  (cl-with-gensyms (b)
     `(dolist (,b (list ,@rest))
        (cl-pushnew ,b ,place :test #',test))))
 
@@ -122,31 +163,49 @@ From Doom's defadvice! macro.
 
 \(fn SYMBOL ARGS &optional DOCSTRING [WHERE PLACES...] &body BODY\)"
   (declare (doc-string 3) (indent defun))
-  (unless (stringp docstring)
+  (unless (string-or-null-p docstring)
     (push docstring body)
     (setq docstring nil))
-  (let ((places-alist)
-        (places (gensym))
-        (place (gensym)))
+  (let ((places-alist))
     (while (keywordp (car body))
       (push `(cons ,(pop body) (jw-tolist ,(pop body))) places-alist))
-    `(progn
-       (defun ,symbol ,args ,docstring ,@body)
-       (dolist (,places (list ,@places-alist))
-          (dolist (,place (cdr ,places))
-            (advice-add ,place (car ,places) #',symbol))))))
+    (cl-with-gensyms (place places)
+      `(progn
+         (defun ,symbol ,args ,docstring ,@body)
+         (dolist (,places (list ,@places-alist))
+           (dolist (,place (cdr ,places))
+             (advice-add ,place (car ,places) #',symbol)))))))
 
 (defmacro jw-after! (package &rest body)
   "Eval BODY after PACKAGE has loaded.
 Basically like `eval-after-load', except prevents eager expansion pulling in
 autoloads."
   (declare (indent defun) (debug t))
-  (when (symbolp package)
+  (let ((packageq (macroexp-quote package)))
     (list (if (or (not (bound-and-true-p byte-compile-current-file))
-                  (require package nil 'noerror))
-              #'progn
-            #'with-no-warnings)
-          `(eval-after-load ',package ',(macroexp-progn body)))))
+                   (require packageq nil 'noerror))
+               #'progn
+             #'with-no-warnings)
+          `(eval-after-load ,packageq
+             (lambda ()
+               ,@body)))))
+
+(defmacro jw-defun (symbol args &optional docstring &rest rest)
+  "Define a function SYMBOL and return it.
+ARGS DOCSTRING and REST are like in `defun.'"
+  (declare (indent defun) (doc-string 3))
+  (setq docstring (or docstring "Function created by `jw-defun'."))
+  `(progn
+     (defun ,symbol ,args ,docstring ,@rest)
+     #',symbol))
+
+(defmacro jw-quickmark (dir)
+  "Create a quickmark function for DIR."
+  (let ((quickmark-fun (intern (concat "quickmark-" (expand-file-name dir)))))
+    `(jw-defun ,quickmark-fun ()
+       "Create a quickmark for DIR."
+       (interactive)
+       (dired ,dir))))
 
 (provide 'jw-lib)
 ;;; jw-lib.el ends here
