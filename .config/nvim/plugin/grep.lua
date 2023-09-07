@@ -27,15 +27,22 @@ end
 local function grep(loclist)
   return function(fargs)
     local f_args = vim.fn.expandcmd(fargs.args)
-    local grep_args = vim.list_extend({'--vimgrep', '--smart-case'}, vim.split(f_args, " "))
+    f_args = vim.split(f_args, ' ', { trimempty = true })
+    if #f_args == 1 then
+      f_args[#f_args + 1] = vim.fn.expand '%'
+    end
+
+    local grep_args = vim.list_extend({ '--vimgrep', '--smart-case' }, f_args)
     local list = 'grep'
     if loclist then
       list = 'lgrep'
     end
     vim.cmd('doautocmd QuickFixCmdPre ' .. list)
+    local cwd = vim.fn.getcwd()
     Job:new({
       command = 'rg',
       args = grep_args,
+      cwd = cwd,
       on_exit = function(self, return_val)
         if return_val ~= 0 then
           return
@@ -43,7 +50,12 @@ local function grep(loclist)
         local result = self:result()
         local setl = setlist(loclist)
         vim.defer_fn(function()
-          setl({}, " ", {efm = vim.o.grepformat, title = 'Ripgrep', nr = '$', lines = result})
+          setl({}, ' ', {
+            efm = vim.o.grepformat,
+            title = 'Ripgrep',
+            nr = '$',
+            lines = result,
+          })
         end, 0)
       end,
     }):start()
@@ -51,7 +63,7 @@ local function grep(loclist)
 end
 
 local addcmd = vim.api.nvim_create_user_command
-addcmd('Grep', grep(false), {nargs = '+', complete = 'file_in_path'})
-addcmd('LGrep', grep(true), {nargs = '+', complete = 'file_in_path'})
-vim.keymap.set('n', 'g/', ":Grep ", { silent = false })
-vim.keymap.set('x', 'g/', "y:<C-U>Grep <C-R>\"", { silent = false })
+addcmd('Grep', grep(false), { nargs = '+', complete = 'file_in_path' })
+addcmd('LGrep', grep(true), { nargs = '+', complete = 'file_in_path' })
+vim.keymap.set('n', 'g/', ':Grep ', { silent = false })
+vim.keymap.set('x', 'g/', 'y:<C-U>Grep <C-R>"', { silent = false })

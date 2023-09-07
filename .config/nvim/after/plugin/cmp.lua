@@ -2,17 +2,19 @@ local cmp = require 'cmp'
 
 local lspkind = require 'lspkind'
 local luasnip = require 'luasnip'
-local neogen = require 'neogen'
-local partial = require('jw.utils').partial
+-- local neogen = require 'neogen'
+-- local partial = require('jw.utils').partial
+-- local copilot_comparators = require 'copilot_cmp.comparators'
 
-local function cmp_pred(fn)
-  return cmp.mapping(function(fallback)
-    if cmp.visible() then
-      return fn()
-    end
-    return fallback()
-  end)
-end
+-- local function cmp_pred(fn)
+--   return cmp.mapping(function(fallback)
+--     if cmp.visible() then
+--       return fn()
+--     end
+--     return fallback()
+--   end)
+-- end
+
 cmp.setup {
   snippet = {
     expand = function(args)
@@ -20,111 +22,123 @@ cmp.setup {
     end,
   },
 
-  mapping = {
-    ['<C-b>'] = cmp_pred(partial(cmp.mapping.scroll_docs, -4)),
-    ['<C-f>'] = cmp_pred(partial(cmp.mapping.scroll_docs, 4)),
+  mapping = cmp.mapping.preset.insert {
+    ['<C-d>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-f>'] = cmp.mapping.scroll_docs(4),
 
-    ['<C-y>'] = cmp.mapping(
-      cmp.mapping.confirm {
-        behavior = cmp.ConfirmBehavior.Insert,
-        select = true,
-      },
-      { 'i' }
-    ),
+    ['<C-Space>'] = cmp.mapping(cmp.mapping.complete {}, { 'i', 'c' }),
+    ['<M-o>'] = cmp.mapping(cmp.mapping.complete {}, { 'i', 'c' }),
 
-    ['<C-Space>'] = cmp.mapping(cmp.mapping.complete(), { 'i' }),
-    -- ['<C-Space>'] = cmp.mapping({
-    --   i = cmp.mapping.complete(),
-    --   c = function()
-    --     if cmp.visible() then
-    --       cmp.complete()
-    --       return
-    --     end
-    --     cmp.confirm { select = true }
-    --   end
-    -- }),
-
-    ['<C-e>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.abort()
-      else
-        fallback()
-      end
-    end),
-
-    ['<C-q>'] = cmp.mapping.confirm {
-      behavior = cmp.ConfirmBehavior.Replace,
-      select = true,
-    },
-    ['<CR>'] = cmp.mapping.confirm({ select = true }),
-
-    ['<Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_next_item()
-      elseif neogen.jumpable() then
-        neogen.jump_next()
+    ['<M-j>'] = cmp.mapping(function(fallback)
+      if luasnip.jumpable(1) then
+        luasnip.jump(1)
       elseif luasnip.expand_or_jumpable() then
         luasnip.expand_or_jump()
       else
         fallback()
       end
-    end, { "i", "s" }),
+    end, { 'i', 's' }),
 
-    ['<S-Tab>'] = cmp.mapping(function(fallback)
-      if cmp.visible() then
-        cmp.select_prev_item()
-      elseif neogen.jumpable(-1) then
-        neogen.jump_prev()
-      elseif luasnip.jumpable(-1) then
+    ['<M-k>'] = cmp.mapping(function(fallback)
+      if luasnip.jumpable(-1) then
         luasnip.jump(-1)
       else
         fallback()
       end
-    end, { "i", "s" }),
+    end, { 'i', 's' }),
+
+    ['C-n'] = cmp.mapping.select_next_item {
+      behavior = cmp.SelectBehavior.Insert,
+    },
+
+    ['C-p'] = cmp.mapping.select_prev_item {
+      behavior = cmp.SelectBehavior.Insert,
+    },
+
+    ['<Tab>'] = cmp.config.disable,
+
+    ['<C-k>'] = cmp.mapping(cmp.mapping.select_prev_item(), { 'i', 'c' }),
+
+    ['<C-j>'] = cmp.mapping(cmp.mapping.select_next_item(), { 'i', 'c' }),
+
+    ['<C-q>'] = cmp.mapping.confirm {
+      behavior = cmp.ConfirmBehavior.Replace,
+      select = true,
+    },
+
+    ['<CR>'] = function(fallback)
+      if cmp.visible() then
+        cmp.confirm {
+          behavior = cmp.ConfirmBehavior.Replace,
+          select = false,
+        }
+      else
+        fallback()
+      end
+    end,
+
+    -- ['<Tab>'] = cmp.mapping(function(fallback)
+    --   if cmp.visible() then
+    --     cmp.select_next_item()
+    --   elseif neogen.jumpable() then
+    --     neogen.jump_next()
+    --   else
+    --     fallback()
+    --   end
+    -- end, { 'i', 's' }),
+    --
+    --   ['<S-Tab>'] = cmp.mapping(function(fallback)
+    --     if cmp.visible() then
+    --       cmp.select_prev_item()
+    --     elseif neogen.jumpable(-1) then
+    --       neogen.jump_prev()
+    --     else
+    --       fallback()
+    --     end
+    --   end, { 'i', 's' }),
   },
 
-  sources = {
-    { name = 'nvim_lua' },
+  sources = cmp.config.sources({
     { name = 'nvim_lsp' },
+    { name = 'copilot' },
+    { name = 'nvim_lsp_signature_help' },
+  }, { { name = 'luasnip' } }, {
     { name = 'path' },
-    { name = 'luasnip' },
-    { name = 'buffer', keyword_length = 5 },
-  },
+    { name = 'buffer', keyword_length = 3 },
+  }),
 
   formatting = {
     format = lspkind.cmp_format {
-      with_text = true,
+      mode = 'symbol_text',
+      ellipsis_char = '...',
       maxwidth = 50,
-      menu = {
-        buffer = "[buf]",
-        nvim_lsp = "[LSP]",
-        path = "[path]",
-        nvim_lua = "[api]",
-        luasnip = "[snip]",
-      },
+      symbol_map = { Copilot = '' },
     },
   },
 
   sorting = {
+    priority_weight = 2,
     comparators = {
       cmp.config.compare.offset,
       cmp.config.compare.exact,
-      cmp.config.recently_used,
+      -- copilot_comparators.prioritize,
+      -- copilot_comparators.score,
+      cmp.config.compare.score,
 
-      -- completion scores if the lsp supports it
-      function (entry1, entry2)
-        local weight1 = entry1.completion_item.score or 1
-        local weight2 = entry2.completion_item.score or 1
-        local score1 = entry1.score
-        local score2 = entry2.score
-        return (score2 * weight2) < (score1 * weight1)
-      end,
-
+      -- -- completion scores if the lsp supports it
+      -- function(entry1, entry2)
+      --   local weight1 = entry1.completion_item.score or 1
+      --   local weight2 = entry2.completion_item.score or 1
+      --   local score1 = entry1.score
+      --   local score2 = entry2.score
+      --   return (score2 * weight2) < (score1 * weight1)
+      -- end,
+      --
       -- shamelessly copied from https://github.com/lukas-reineke/cmp-under-comparator/blob/master/lua/cmp-under-comparator/init.lua
       -- since I cba dling a plugin for one function
       function(entry1, entry2)
-        local _, entry1_under = entry1.completion_item.label:find "^_+"
-        local _, entry2_under = entry2.completion_item.label:find "^_+"
+        local _, entry1_under = entry1.completion_item.label:find '^_+'
+        local _, entry2_under = entry2.completion_item.label:find '^_+'
         entry1_under = entry1_under or 0
         entry2_under = entry2_under or 0
         if entry1_under > entry2_under then
@@ -134,6 +148,8 @@ cmp.setup {
         end
       end,
 
+      cmp.config.compare.recently_used,
+      cmp.config.compare.locality,
       cmp.config.compare.kind,
       cmp.config.compare.sort_text,
       cmp.config.compare.length,
@@ -141,18 +157,49 @@ cmp.setup {
     },
   },
 
+  -- confirm_opts = {
+  --   behavior = cmp.ConfirmBehavior.Replace,
+  --   select = false,
+  -- },
+
   experimental = {
     native_menu = false,
+    ghost_text = true,
   },
 }
 local ok, cmp_autopairs = pcall(require, 'nvim-autopairs.completion.cmp')
 if ok then
-  cmp.event:on('confirm_done', cmp_autopairs.on_confirm_done {
-    map_char = {
-      tex = '',
-    },
-  })
+  cmp.event:on(
+    'confirm_done',
+    cmp_autopairs.on_confirm_done {
+      map_char = {
+        tex = '',
+      },
+    }
+  )
 end
+
+cmp.setup.filetype({ 'lua' }, {
+  sources = cmp.config.sources({
+    { name = 'nvim_lua' },
+    { name = 'nvim_lsp' },
+    { name = 'nvim_lsp_signature_help' },
+    { name = 'copilot' },
+  }, { { name = 'luasnip' } }, {
+    { name = 'path' },
+    { name = 'buffer', keyword_length = 3 },
+  }),
+})
+
+cmp.setup.filetype({ 'orgmode' }, {
+  sources = cmp.config.sources({
+    { name = 'orgmode' },
+  }, {
+    { name = 'buffer', keyword_length = 3 },
+  }, {
+    { name = 'path' },
+  }),
+})
 
 vim.cmd [[
 augroup DadbodSql
@@ -160,6 +207,22 @@ augroup DadbodSql
   autocmd Filetype sql,mysql,plsql lua require('cmp').setup.buffer { sources = { { name = 'vim-dadbod-completion' } } }
 augroup END
 ]]
-
-local vscode_snips = require("luasnip.loaders.from_vscode")
+vim.api.nvim_create_autocmd('BufRead', {
+  group = vim.api.nvim_create_augroup('CmpSourceCargo', { clear = true }),
+  pattern = 'Cargo.toml',
+  callback = function()
+    cmp.setup.buffer {
+      sources = cmp.config.sources({
+        { name = 'crates' },
+        { name = 'nvim_lsp' },
+        { name = 'copilot' },
+      }, {
+        { name = 'luasnip' },
+        { name = 'path' },
+        { name = 'buffer', keyword_length = 3 },
+      }),
+    }
+  end,
+})
+local vscode_snips = require 'luasnip.loaders.from_vscode'
 vscode_snips.lazy_load()

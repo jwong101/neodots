@@ -10,4 +10,10 @@ endif
 
 setlocal formatprg=rustfmt\ -q\ --emit=stdout
 let &l:include = '\\v^\\s*(pub\\s+)?use\\s+\\zs(\\f\|:)+'
+nnoremap <buffer> [E <Cmd>RustMoveItemUp<CR>
+nnoremap <buffer> ]E <Cmd>RustMoveItemDown<CR>
+nnoremap <buffer> <leader>J <Cmd>RustJoinLines<CR>
+nnoremap <buffer> <leader>M <Cmd>RustExpandMacro<CR>
+nnoremap <buffer> <leader>op <Cmd>RustOpenCargo<CR>
+nnoremap <buffer> <leader>oo <Cmd>RustOpenParent<CR>
 let b:undo_ftplugin .= '|setl fp< inc<'

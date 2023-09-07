@@ -12,7 +12,7 @@ let g:loaded_node_provider = 0
 let g:loaded_perl_provider = 0
 let g:loaded_ruby_provider = 0
 
-lua require('impatient')
+" lua require('hotpot')
 let g:markdown_fenced_languages = [ 'javascript', 'js=javascript', 'json=javascript', 'ts=typescript' ]
 
 set list
@@ -31,6 +31,8 @@ set softtabstop=4
 set foldlevel=99
 set breakindent
 set linebreak
+set conceallevel=2
+set concealcursor=nc
 
 set termguicolors
 set clipboard=unnamedplus
@@ -40,6 +42,7 @@ set pumblend=17
 set wildmode=longest:full,full
 set inccommand=split
 set signcolumn=yes
+set laststatus=3
 
 " set colorcolumn=+1
 set cursorline
@@ -52,11 +55,12 @@ set splitbelow
 set lazyredraw
 set scrolloff=10
 set sidescrolloff=2
-set mouse=a
+set splitkeep=screen
+set mouse=nvi
 set updatetime=250
 set timeoutlen=500
 
-set completeopt=menu,menuone
+set completeopt=menu,menuone,noinsert
 set shortmess+=c
 set confirm
 set backspace=indent,eol,nostop
@@ -67,11 +71,13 @@ set grepformat^=%f:%l:%c:$m
 set noswapfile
 set undofile
 
-set diffopt+=indent-heuristic
+set diffopt+=indent-heuristic,linematch:60
 
 map <Space> <Nop>
 let g:mapleader="\<Space>"
 let g:maplocalleader="\<Space>"
+let g:git_messenger_no_default_mappings=v:true
+let g:qf_mapping_ack_style=v:true
 
 nnoremap gq<CR> mzHmygggqG`yzt`z
 nnoremap <silent> <Leader>sws <Cmd>%s/\s\+$<CR>
@@ -120,6 +126,8 @@ nnoremap yoc <Cmd>setlocal cursorline!<Bar>set cul?<CR>
 nnoremap yo<Bar> <Cmd>setlocal cursorcolumn!<Bar>set cuc?<CR>
 nnoremap yos <Cmd>setlocal spell!<Bar>set spell?<CR>
 nnoremap yol <Cmd>setlocal list!<Bar>set list?<CR>
+
+nmap yom <Plug>(git-messenger)
 nnoremap <expr> yoC '<Cmd>setlocal colorcolumn=' . (&colorcolumn == '' ? '+1' : '') . '<CR>'
 
 nmap <Leader>qs <Plug>(qf_qf_switch)
@@ -139,6 +147,8 @@ function! Sort(type, ...) abort
 endfunction
 nnoremap gs m'<Cmd>set operatorfunc=Sort<CR>g@
 xnoremap gs :sort<CR>
+
+lua require('jw.plugins')
 
 augroup init
     autocmd!

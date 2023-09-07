@@ -1,0 +1,12 @@
+--[[ local dial = require 'dial.config' ]]
+--[[ local augend = require 'dial.augend' ]]
+
+--[[ dial.augends:register_group { ]]
+--[[   default = { ]]
+--[[     augend.constant.new { ]]
+--[[       elements = { 'and', 'or' }, ]]
+--[[       word = true, ]]
+--[[       cyclic = true, ]]
+--[[     }, ]]
+--[[   }, ]]
+--[[ } ]]

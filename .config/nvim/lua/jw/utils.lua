@@ -11,9 +11,10 @@ function M.vmap(lhs, rhs, opts)
 end
 
 function M.bmap(mode, opts)
-  return function (lhs, rhs, extra)
-    opts = opts or {}
-    vim.tbl_extend("force", opts, extra)
+  opts = opts or {}
+  return function(lhs, rhs, extra)
+    extra = extra or {}
+    vim.tbl_extend('force', opts, extra)
     vim.keymap.set(mode, lhs, rhs, opts)
   end
 end
